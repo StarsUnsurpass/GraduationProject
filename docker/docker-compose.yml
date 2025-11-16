@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: power-diagnosis-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: power_diagnosis
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../scripts/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    networks:
+      - power-diagnosis-network
+
+  # Neo4j图数据库
+  neo4j:
+    image: neo4j:4.4
+    container_name: power-diagnosis-neo4j
+    restart: always
+    environment:
+      NEO4J_AUTH: neo4j/password
+      NEO4J_dbms_memory_heap_max__size: 2G
+      NEO4J_dbms_memory_pagecache_size: 1G
+      TZ: Asia/Shanghai
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+      - ../scripts/init-neo4j.cypher:/var/lib/neo4j/import/init.cypher
+    networks:
+      - power-diagnosis-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: power-diagnosis-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - power-diagnosis-network
+
+  # RabbitMQ消息队列（可选）
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: power-diagnosis-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - power-diagnosis-network
+
+  # Nginx反向代理（可选）
+  nginx:
+    image: nginx:alpine
+    container_name: power-diagnosis-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - knowledge-graph-service
+      - user-service
+    networks:
+      - power-diagnosis-network
+
+  # 知识图谱服务
+  knowledge-graph-service:
+    build:
+      context: ../backend/modules/knowledge-graph-service
+      dockerfile: Dockerfile
+    container_name: knowledge-graph-service
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/power_diagnosis?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_NEO4J_URI: bolt://neo4j:7687
+      SPRING_REDIS_HOST: redis
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql
+      - neo4j
+      - redis
+    networks:
+      - power-diagnosis-network
+
+  # 用户服务
+  user-service:
+    build:
+      context: ../backend/modules/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/power_diagnosis?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_REDIS_HOST: redis
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - power-diagnosis-network
+
+# 网络配置
+networks:
+  power-diagnosis-network:
+    driver: bridge
+
+# 数据卷
+volumes:
+  mysql-data:
+  neo4j-data:
+  neo4j-logs:
+  redis-data:
+  rabbitmq-data:
+  nginx-logs:
