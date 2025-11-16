@@ -2,4 +2,4 @@ test
 
 settings
 
-version-1.0
+new feature
