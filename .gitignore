@@ -1,97 +1,33 @@
-# ========================================
-# Java / Maven
-# ========================================
+HELP.md
 target/
-!.mvn/wrapper/maven-wrapper.jar
-*.class
-*.jar
-*.war
-*.ear
-*.log
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-# ========================================
-# IntelliJ IDEA
-# ========================================
-.idea/
-*.iml
-*.iws
-*.ipr
-out/
-
-# ========================================
-# Eclipse
-# ========================================
-.settings/
+### STS ###
+.apt_generated
 .classpath
+.factorypath
 .project
-bin/
+.settings
+.springBeans
+.sts4-cache
 
-# ========================================
-# VS Code
-# ========================================
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
 .vscode/
-*.code-workspace
-
-# ========================================
-# Node.js / NPM
-# ========================================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-dist/
-.DS_Store
-
-# ========================================
-# 前端构建产物
-# ========================================
-frontend/dist/
-frontend/.vite/
-frontend/.eslintcache
-
-# ========================================
-# 环境配置文件
-# ========================================
-*.env
-*.env.local
-*.env.*.local
-application-dev.yml
-application-prod.yml
-
-# ========================================
-# 日志文件
-# ========================================
-logs/
-*.log
-
-# ========================================
-# 系统文件
-# ========================================
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-
-# ========================================
-# 数据库文件
-# ========================================
-*.db
-*.sqlite
-*.sqlite3
-
-# ========================================
-# 临时文件
-# ========================================
-tmp/
-temp/
-*.tmp
-*.bak
-
-# ========================================
-# Docker
-# ========================================
-.dockerignore
-
-.claude/
