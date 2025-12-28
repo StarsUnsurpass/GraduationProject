@@ -1,5 +1,6 @@
 package com.graduationproject.power_fault_analysis.controller;
 
+import com.graduationproject.power_fault_analysis.dto.GraphData;
 import com.graduationproject.power_fault_analysis.model.*;
 import com.graduationproject.power_fault_analysis.service.KnowledgeGraphService;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,13 @@ public class KnowledgeGraphController {
         this.knowledgeGraphService = knowledgeGraphService;
     }
 
-    // DeviceType Endpoints
+    // --- Graph Data ---
+    @GetMapping("/whole-graph")
+    public ResponseEntity<GraphData> getWholeGraph() {
+        return ResponseEntity.ok(knowledgeGraphService.getWholeGraph());
+    }
+
+    // --- DeviceType Endpoints ---
     @PostMapping("/devicetype")
     public ResponseEntity<DeviceType> createDeviceType(@RequestBody DeviceType deviceType) {
         return new ResponseEntity<>(knowledgeGraphService.saveDeviceType(deviceType), HttpStatus.CREATED);
@@ -36,7 +43,13 @@ public class KnowledgeGraphController {
         return ResponseEntity.ok(knowledgeGraphService.findAllDeviceTypes());
     }
 
-    // Component Endpoints
+    @PostMapping("/devicetype/{deviceName}/component/{componentName}")
+    public ResponseEntity<Void> addComponentToDeviceType(@PathVariable String deviceName, @PathVariable String componentName) {
+        knowledgeGraphService.addComponentToDeviceType(deviceName, componentName);
+        return ResponseEntity.ok().build();
+    }
+
+    // --- Component Endpoints ---
     @PostMapping("/component")
     public ResponseEntity<Component> createComponent(@RequestBody Component component) {
         return new ResponseEntity<>(knowledgeGraphService.saveComponent(component), HttpStatus.CREATED);
@@ -54,7 +67,13 @@ public class KnowledgeGraphController {
         return ResponseEntity.ok(knowledgeGraphService.findAllComponents());
     }
 
-    // FaultPhenomenon Endpoints
+    @PostMapping("/component/{componentName}/fault/{faultName}")
+    public ResponseEntity<Void> addFaultToComponent(@PathVariable String componentName, @PathVariable String faultName) {
+        knowledgeGraphService.addFaultToComponent(componentName, faultName);
+        return ResponseEntity.ok().build();
+    }
+
+    // --- FaultPhenomenon Endpoints ---
     @PostMapping("/faultphenomenon")
     public ResponseEntity<FaultPhenomenon> createFaultPhenomenon(@RequestBody FaultPhenomenon faultPhenomenon) {
         return new ResponseEntity<>(knowledgeGraphService.saveFaultPhenomenon(faultPhenomenon), HttpStatus.CREATED);
@@ -72,7 +91,13 @@ public class KnowledgeGraphController {
         return ResponseEntity.ok(knowledgeGraphService.findAllFaultPhenomena());
     }
 
-    // FaultCause Endpoints
+    @PostMapping("/faultphenomenon/{phenomenonName}/cause/{causeName}")
+    public ResponseEntity<Void> addCauseToPhenomenon(@PathVariable String phenomenonName, @PathVariable String causeName) {
+        knowledgeGraphService.addCauseToPhenomenon(phenomenonName, causeName);
+        return ResponseEntity.ok().build();
+    }
+
+    // --- FaultCause Endpoints ---
     @PostMapping("/faultcause")
     public ResponseEntity<FaultCause> createFaultCause(@RequestBody FaultCause faultCause) {
         return new ResponseEntity<>(knowledgeGraphService.saveFaultCause(faultCause), HttpStatus.CREATED);
@@ -90,7 +115,13 @@ public class KnowledgeGraphController {
         return ResponseEntity.ok(knowledgeGraphService.findAllFaultCauses());
     }
 
-    // Solution Endpoints
+    @PostMapping("/faultcause/{causeName}/solution/{solutionName}")
+    public ResponseEntity<Void> addSolutionToCause(@PathVariable String causeName, @PathVariable String solutionName) {
+        knowledgeGraphService.addSolutionToCause(causeName, solutionName);
+        return ResponseEntity.ok().build();
+    }
+
+    // --- Solution Endpoints ---
     @PostMapping("/solution")
     public ResponseEntity<Solution> createSolution(@RequestBody Solution solution) {
         return new ResponseEntity<>(knowledgeGraphService.saveSolution(solution), HttpStatus.CREATED);
