@@ -1,6 +1,34 @@
 <template>
   <div class="knowledge-graph-container">
-    <div id="graph-container" style="width: 100%; height: 80vh; border: 1px solid #ccc;"></div>
+    <!-- Graph Area -->
+    <div id="graph-container" class="graph-canvas"></div>
+
+    <!-- Floating Filter Panel -->
+    <el-card class="filter-panel" shadow="always">
+       <template #header>
+         <div class="panel-header">
+           <span><el-icon><Filter /></el-icon> 图谱筛选</span>
+         </div>
+       </template>
+       <div class="filter-content">
+         <el-checkbox-group v-model="selectedCategories" @change="updateChart" direction="vertical">
+            <div class="filter-item"><el-checkbox label="DeviceType">设备类型 (Device)</el-checkbox></div>
+            <div class="filter-item"><el-checkbox label="Component">设备部件 (Component)</el-checkbox></div>
+            <div class="filter-item"><el-checkbox label="FaultPhenomenon">故障现象 (Fault)</el-checkbox></div>
+            <div class="filter-item"><el-checkbox label="FaultCause">故障原因 (Cause)</el-checkbox></div>
+            <div class="filter-item"><el-checkbox label="Solution">解决方案 (Solution)</el-checkbox></div>
+        </el-checkbox-group>
+       </div>
+    </el-card>
+
+    <!-- Legend/Info (Optional) -->
+    <div class="graph-info">
+      <el-tag effect="dark" type="primary">设备</el-tag>
+      <el-tag effect="dark" type="info">部件</el-tag>
+      <el-tag effect="dark" type="warning">故障</el-tag>
+      <el-tag effect="dark" type="danger">原因</el-tag>
+      <el-tag effect="dark" type="success">方案</el-tag>
+    </div>
   </div>
 </template>
 
@@ -10,24 +38,42 @@ import * as echarts from 'echarts';
 import axios from 'axios';
 
 const chartInstance = ref(null);
+const fullData = ref({ nodes: [], links: [] });
+const selectedCategories = ref(['DeviceType', 'Component', 'FaultPhenomenon', 'FaultCause', 'Solution']);
 
-const initChart = (data) => {
+const updateChart = () => {
+    if (!fullData.value.nodes.length) return;
+    
+    const filteredNodesRaw = fullData.value.nodes.filter(n => selectedCategories.value.includes(n.category));
+    const filteredNodeIds = new Set(filteredNodesRaw.map(n => n.id));
+    
+    const filteredLinksRaw = fullData.value.links.filter(l => 
+        filteredNodeIds.has(l.source) && filteredNodeIds.has(l.target)
+    );
+
+    renderChart(filteredNodesRaw, filteredLinksRaw);
+};
+
+const renderChart = (nodeData, linkData) => {
   const chartDom = document.getElementById('graph-container');
   if (!chartDom) return;
   
-  const myChart = echarts.init(chartDom);
-  chartInstance.value = myChart;
-
+  if (!chartInstance.value) {
+      chartInstance.value = echarts.init(chartDom);
+      window.addEventListener('resize', () => {
+          chartInstance.value.resize();
+      });
+  }
+  
   const categories = [
-    { name: 'DeviceType' },
-    { name: 'Component' },
-    { name: 'FaultPhenomenon' },
-    { name: 'FaultCause' },
-    { name: 'Solution' }
+    { name: 'DeviceType', itemStyle: { color: '#409EFF' } },
+    { name: 'Component', itemStyle: { color: '#909399' } },
+    { name: 'FaultPhenomenon', itemStyle: { color: '#E6A23C' } },
+    { name: 'FaultCause', itemStyle: { color: '#F56C6C' } },
+    { name: 'Solution', itemStyle: { color: '#67C23A' } }
   ];
 
-  // Map nodes to expected format
-  const nodes = data.nodes.map(node => {
+  const nodes = nodeData.map(node => {
     let catIndex = 0;
     if (node.category === 'DeviceType') catIndex = 0;
     else if (node.category === 'Component') catIndex = 1;
@@ -36,38 +82,36 @@ const initChart = (data) => {
     else if (node.category === 'Solution') catIndex = 4;
 
     return {
-      id: node.id, // ECharts graph uses id or name
+      id: node.id, 
       name: node.name,
       value: node.category,
       category: catIndex,
-      symbolSize: 40,
+      symbolSize: catIndex === 0 ? 55 : 40,
       label: { show: true }
     };
   });
 
-  const links = data.links.map(link => ({
+  const links = linkData.map(link => ({
     source: link.source,
     target: link.target,
     value: link.name,
-    label: { show: true, formatter: link.name }
+    label: { show: false, formatter: link.name } // Hidden label for cleaner look, show on hover
   }));
 
   const option = {
     title: {
-      text: 'Power Equipment Knowledge Graph',
-      subtext: 'Force Directed Layout',
-      top: 'bottom',
-      left: 'right'
+      text: '',
     },
     tooltip: {
         trigger: 'item',
-        formatter: '{b}: {c}'
+        formatter: (params) => {
+           if (params.dataType === 'edge') {
+               return `${params.data.source} > ${params.data.value} > ${params.data.target}`;
+           }
+           return `<b>${params.name}</b><br/>${params.data.value}`;
+        }
     },
-    legend: [
-      {
-        data: categories.map(a => a.name)
-      }
-    ],
+    legend: [{ show: false }], // Using custom legend
     series: [
       {
         name: 'Graph',
@@ -83,12 +127,20 @@ const initChart = (data) => {
           formatter: '{b}'
         },
         force: {
-          repulsion: 500,
-          edgeLength: 150
+          repulsion: 800,
+          edgeLength: 120,
+          gravity: 0.1
         },
         lineStyle: {
-            color: 'source',
-            curveness: 0.3
+            color: '#c0c4cc',
+            curveness: 0.3,
+            width: 2
+        },
+        emphasis: {
+            focus: 'adjacency',
+            lineStyle: {
+                width: 4
+            }
         },
         edgeSymbol: ['none', 'arrow'],
         edgeSymbolSize: 10
@@ -96,31 +148,70 @@ const initChart = (data) => {
     ]
   };
 
-  myChart.setOption(option);
-  
-  // Handle resize
-  window.addEventListener('resize', () => {
-      myChart.resize();
-  });
+  chartInstance.value.setOption(option);
 };
 
 onMounted(async () => {
   try {
     const response = await axios.get('http://localhost:8081/api/knowledge-graph/whole-graph');
     if (response.data) {
-        initChart(response.data);
+        fullData.value = response.data;
+        updateChart();
     }
   } catch (error) {
     console.error('Failed to fetch graph data:', error);
-    // Use dummy data if fetch fails for testing visual
-    // initChart(dummyData);
   }
 });
 </script>
 
 <style scoped>
 .knowledge-graph-container {
-  padding: 20px;
-  background-color: #f5f7fa;
+  position: relative;
+  height: calc(100vh - 140px); /* Adjust based on header/footer */
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.graph-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.filter-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 220px;
+    opacity: 0.95;
+    z-index: 5;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: bold;
+}
+
+.filter-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-item {
+    margin-bottom: 8px;
+}
+
+.graph-info {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    background: rgba(255,255,255,0.8);
+    padding: 10px;
+    border-radius: 4px;
 }
 </style>
