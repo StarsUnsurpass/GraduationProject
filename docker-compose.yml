@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  neo4j:
+    image: neo4j:community
+    container_name: power_fault_neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/password
+    volumes:
+      - neo4j_data:/data
+
+  backend:
+    build: ./backend/power-fault-analysis
+    container_name: power_fault_backend
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_NEO4J_URI=bolt://neo4j:7687
+      - SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j
+      - SPRING_NEO4J_AUTHENTICATION_PASSWORD=password
+    depends_on:
+      - neo4j
+    restart: on-failure
+
+  frontend:
+    build: ./frontend/power-fault-analysis-frontend
+    container_name: power_fault_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  neo4j_data:

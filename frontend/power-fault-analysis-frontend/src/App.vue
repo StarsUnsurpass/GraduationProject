@@ -29,6 +29,18 @@
             <el-icon><Setting /></el-icon>数据管理
           </el-menu-item>
         </el-menu>
+        <div class="header-right">
+          <el-tooltip :content="isDark ? '切换白天模式' : '切换夜间模式'" placement="bottom">
+            <el-switch
+              v-model="isDark"
+              inline-prompt
+              :active-icon="Moon"
+              :inactive-icon="Sunny"
+              @change="toggleDark"
+              style="--el-switch-on-color: #2c3e50; --el-switch-off-color: #f39c12"
+            />
+          </el-tooltip>
+        </div>
       </div>
     </el-header>
     
@@ -47,11 +59,32 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { Sunny, Moon } from '@element-plus/icons-vue';
 
 const activeIndex = ref('/');
 const route = useRoute();
+const isDark = ref(false);
+
+const toggleDark = (val) => {
+  const html = document.documentElement;
+  if (val) {
+    html.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    html.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }
+};
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    isDark.value = true;
+    toggleDark(true);
+  }
+});
 
 watch(() => route.path, (newPath) => {
   activeIndex.value = newPath;
@@ -64,8 +97,9 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-  background-color: #f0f2f5;
-  color: #303133;
+  background-color: var(--el-bg-color-page);
+  color: var(--el-text-color-primary);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .layout-container {
@@ -82,6 +116,10 @@ body {
   z-index: 10;
 }
 
+/* Ensure header stays dark even in dark mode for consistency if desired, 
+   or let it change. Usually professional apps keep the side/top bar consistent. 
+   Here we keep it dark as originally designed. */
+
 .header-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -91,6 +129,12 @@ body {
   height: 100%;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  padding-right: 20px;
+}
+
 .logo {
   font-size: 20px;
   font-weight: 600;
@@ -98,12 +142,15 @@ body {
   align-items: center;
   gap: 10px;
   padding-left: 20px;
+  color: white;
 }
 
 .nav-menu {
   border-bottom: none !important;
   height: 60px;
   background-color: transparent !important;
+  flex: 1;
+  justify-content: center;
 }
 
 .app-main {
@@ -117,10 +164,16 @@ body {
 
 .app-footer {
   text-align: center;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
   padding: 20px 0;
-  background-color: #f0f2f5;
+  background-color: var(--el-bg-color-page);
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+/* Dark mode overrides for ECharts containers if needed */
+.dark .echarts-container {
+  background-color: #1a1a1a !important;
 }
 
 /* Transitions */

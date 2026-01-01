@@ -118,6 +118,47 @@
           </div>
         </el-tab-pane>
 
+        <!-- Tab 3: Batch Import -->
+        <el-tab-pane name="import">
+          <template #label>
+            <span class="custom-tab-label">
+              <el-icon><Upload /></el-icon>
+              <span>批量导入 (Excel)</span>
+            </span>
+          </template>
+
+          <div class="form-container">
+            <el-alert title="提示: 上传 Excel 文件批量导入数据。" type="warning" show-icon :closable="false" style="margin-bottom:20px;">
+                <template #default>
+                    <div>
+                        <p>请确保文件包含以下 Sheet: <b>DeviceType, Component, FaultPhenomenon, FaultCause, Solution, Relationships</b></p>
+                        <p>Relationship Sheet 列顺序: Source | Target | Type (HAS_COMPONENT, HAS_POSSIBLE_FAULT, CAUSED_BY, SOLVED_BY)</p>
+                    </div>
+                </template>
+            </el-alert>
+
+            <el-upload
+              class="upload-demo"
+              drag
+              :action="uploadUrl"
+              :on-success="handleUploadSuccess"
+              :on-error="handleUploadError"
+              :show-file-list="false"
+              name="file"
+            >
+              <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+              <div class="el-upload__text">
+                拖拽文件到此处 或 <em>点击上传</em>
+              </div>
+              <template #tip>
+                <div class="el-upload__tip">
+                  支持 .xlsx 文件
+                </div>
+              </template>
+            </el-upload>
+          </div>
+        </el-tab-pane>
+
       </el-tabs>
     </el-card>
   </div>
@@ -127,7 +168,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { Plus, Check, Edit, CirclePlus, Link, Right } from '@element-plus/icons-vue';
+import { Plus, Check, Edit, CirclePlus, Link, Right, Upload, UploadFilled } from '@element-plus/icons-vue';
 
 const activeTab = ref('entities');
 const entityType = ref('devicetype');
@@ -145,6 +186,7 @@ const causeList = ref([]);
 const solutionList = ref([]);
 
 const apiBase = 'http://localhost:8081/api/knowledge-graph';
+const uploadUrl = 'http://localhost:8081/api/data/import';
 
 // Fetch lists for dropdowns
 const fetchAllLists = async () => {
@@ -226,6 +268,15 @@ const createRelationship = async () => {
          ElMessage.error('关联建立失败');
     }
 };
+
+const handleUploadSuccess = () => {
+  ElMessage.success('批量导入成功！');
+  fetchAllLists();
+};
+
+const handleUploadError = () => {
+  ElMessage.error('导入失败，请检查文件格式。');
+};
 </script>
 
 <style scoped>
@@ -270,8 +321,9 @@ const createRelationship = async () => {
     justify-content: space-between;
     margin-top: 40px;
     padding: 20px;
-    background-color: #f5f7fa;
+    background-color: var(--el-fill-color-light);
     border-radius: 8px;
+    transition: background-color 0.3s;
 }
 
 .node-box {
@@ -281,7 +333,7 @@ const createRelationship = async () => {
     gap: 10px;
     text-align: center;
     font-weight: bold;
-    color: #606266;
+    color: var(--el-text-color-regular);
 }
 
 .arrow {
@@ -289,13 +341,14 @@ const createRelationship = async () => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    color: #409EFF;
+    color: var(--el-color-primary);
 }
 
 .rel-name {
     font-size: 12px;
     margin-top: 5px;
-    background: #ecf5ff;
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
     padding: 2px 8px;
     border-radius: 10px;
 }

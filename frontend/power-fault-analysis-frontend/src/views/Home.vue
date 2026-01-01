@@ -137,20 +137,21 @@ onMounted(async () => {
   text-align: center;
   margin-bottom: 40px;
   padding: 40px 20px;
-  background: white;
+  background: var(--el-bg-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: background-color 0.3s;
 }
 
 .hero-section h1 {
   font-size: 2.5rem;
-  color: #1f2f3d;
+  color: var(--el-text-color-primary);
   margin-bottom: 10px;
 }
 
 .subtitle {
   font-size: 1.2rem;
-  color: #5e6d82;
+  color: var(--el-text-color-secondary);
   margin-bottom: 30px;
 }
 
@@ -179,17 +180,17 @@ onMounted(async () => {
 .number {
   font-size: 28px;
   font-weight: bold;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .unit {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-left: 5px;
 }
 
-.warning-card .number { color: #E6A23C; }
-.success-card .number { color: #67C23A; }
+.warning-card .number { color: var(--el-color-warning); }
+.success-card .number { color: var(--el-color-success); }
 
 .section-title {
   font-weight: bold;
@@ -201,7 +202,7 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #409EFF;
+  color: var(--el-color-primary);
   min-height: 250px;
 }
 </style>

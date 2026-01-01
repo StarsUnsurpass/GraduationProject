@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, onMounted } from 'vue';
 import axios from 'axios';
 import * as echarts from 'echarts';
 
@@ -58,6 +58,9 @@ const searchQuery = ref('');
 const resultFound = ref(false);
 const searched = ref(false);
 let chartInstance = null;
+
+// Detect dark mode
+const isDarkMode = () => document.documentElement.classList.contains('dark');
 
 const quickSearch = (val) => {
     searchQuery.value = val;
@@ -96,8 +99,18 @@ const handleDiagnose = async () => {
 
 const initChart = (data) => {
     const chartDom = document.getElementById('diagnosis-graph');
-    if (chartInstance) chartInstance.dispose();
-    chartInstance = echarts.init(chartDom);
+    if (!chartDom) return;
+    
+    const theme = isDarkMode() ? 'dark' : null;
+    
+    if (chartInstance) {
+        if (chartInstance.getTheme() !== theme) {
+            chartInstance.dispose();
+            chartInstance = echarts.init(chartDom, theme);
+        }
+    } else {
+        chartInstance = echarts.init(chartDom, theme);
+    }
     
     const categories = [
         { name: 'FaultPhenomenon', itemStyle: { color: '#E6A23C' }, label: '故障现象' }, 
@@ -126,15 +139,22 @@ const initChart = (data) => {
     }));
     
     const option = {
+        backgroundColor: 'transparent',
         title: { 
             text: '故障因果链',
             left: 'center',
-            top: 10
+            top: 10,
+            textStyle: {
+                color: isDarkMode() ? '#fff' : '#333'
+            }
         },
         tooltip: { trigger: 'item' },
         legend: {
             data: categories.map(c => c.label),
-            bottom: 10
+            bottom: 10,
+            textStyle: {
+                color: isDarkMode() ? '#ccc' : '#333'
+            }
         },
         series: [{
             type: 'graph',
@@ -172,6 +192,16 @@ const translateRelation = (name) => {
     };
     return map[name] || name;
 }
+
+// Watch for theme changes
+onMounted(() => {
+  const observer = new MutationObserver(() => {
+    if (resultFound.value) {
+       handleDiagnose(); // Refresh chart with new theme
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+});
 </script>
 
 <style scoped>
@@ -198,12 +228,12 @@ const translateRelation = (name) => {
 
 .page-title {
     font-size: 2.5rem;
-    color: #303133;
+    color: var(--el-text-color-primary);
     margin-bottom: 10px;
 }
 
 .page-subtitle {
-    color: #909399;
+    color: var(--el-text-color-secondary);
     margin-bottom: 40px;
     font-size: 1.1rem;
 }
@@ -220,7 +250,7 @@ const translateRelation = (name) => {
 
 .main-search-input :deep(.el-input-group__append) {
     border-radius: 0 30px 30px 0;
-    background-color: #409EFF;
+    background-color: var(--el-color-primary);
     color: white;
     border: none;
     box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
@@ -231,7 +261,7 @@ const translateRelation = (name) => {
 }
 
 .quick-tags {
-    color: #606266;
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 
@@ -259,11 +289,12 @@ const translateRelation = (name) => {
 }
 
 .highlight {
-    color: #409EFF;
+    color: var(--el-color-primary);
 }
 
 .graph-card {
     border-radius: 8px;
+    background-color: var(--el-bg-color);
 }
 
 .no-result {

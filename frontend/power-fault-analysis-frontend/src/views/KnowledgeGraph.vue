@@ -33,13 +33,16 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import * as echarts from 'echarts';
 import axios from 'axios';
 
 const chartInstance = ref(null);
 const fullData = ref({ nodes: [], links: [] });
 const selectedCategories = ref(['DeviceType', 'Component', 'FaultPhenomenon', 'FaultCause', 'Solution']);
+
+// Detect dark mode
+const isDarkMode = () => document.documentElement.classList.contains('dark');
 
 const updateChart = () => {
     if (!fullData.value.nodes.length) return;
@@ -59,10 +62,17 @@ const renderChart = (nodeData, linkData) => {
   if (!chartDom) return;
   
   if (!chartInstance.value) {
-      chartInstance.value = echarts.init(chartDom);
+      chartInstance.value = echarts.init(chartDom, isDarkMode() ? 'dark' : null);
       window.addEventListener('resize', () => {
           chartInstance.value.resize();
       });
+  } else {
+      // Re-initialize if theme changed
+      const currentTheme = isDarkMode() ? 'dark' : null;
+      if (chartInstance.value.getTheme() !== currentTheme) {
+          chartInstance.value.dispose();
+          chartInstance.value = echarts.init(chartDom, currentTheme);
+      }
   }
   
   const categories = [
@@ -99,6 +109,7 @@ const renderChart = (nodeData, linkData) => {
   }));
 
   const option = {
+    backgroundColor: 'transparent', // Let container background show
     title: {
       text: '',
     },
@@ -132,7 +143,7 @@ const renderChart = (nodeData, linkData) => {
           gravity: 0.1
         },
         lineStyle: {
-            color: '#c0c4cc',
+            color: isDarkMode() ? '#555' : '#c0c4cc',
             curveness: 0.3,
             width: 2
         },
@@ -151,7 +162,13 @@ const renderChart = (nodeData, linkData) => {
   chartInstance.value.setOption(option);
 };
 
+// Listen for theme changes from App.vue
 onMounted(async () => {
+  const observer = new MutationObserver(() => {
+    updateChart();
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
   try {
     const response = await axios.get('http://localhost:8081/api/knowledge-graph/whole-graph');
     if (response.data) {
@@ -168,10 +185,11 @@ onMounted(async () => {
 .knowledge-graph-container {
   position: relative;
   height: calc(100vh - 140px); /* Adjust based on header/footer */
-  background-color: #fff;
+  background-color: var(--el-bg-color);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: background-color 0.3s;
 }
 
 .graph-canvas {
@@ -184,7 +202,7 @@ onMounted(async () => {
     top: 20px;
     left: 20px;
     width: 220px;
-    opacity: 0.95;
+    opacity: 0.9;
     z-index: 5;
 }
 
@@ -210,8 +228,9 @@ onMounted(async () => {
     right: 20px;
     display: flex;
     gap: 10px;
-    background: rgba(255,255,255,0.8);
+    background: var(--el-bg-color-overlay);
     padding: 10px;
     border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
 }
 </style>
