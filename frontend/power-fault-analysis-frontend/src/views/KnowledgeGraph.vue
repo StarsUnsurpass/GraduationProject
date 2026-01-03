@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 import * as echarts from 'echarts';
 import axios from 'axios';
 
@@ -170,7 +170,7 @@ onMounted(async () => {
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
   try {
-    const response = await axios.get('http://localhost:8081/api/knowledge-graph/whole-graph');
+    const response = await axios.get(import.meta.env.VITE_API_BASE_URL + '/api/knowledge-graph/whole-graph');
     if (response.data) {
         fullData.value = response.data;
         updateChart();

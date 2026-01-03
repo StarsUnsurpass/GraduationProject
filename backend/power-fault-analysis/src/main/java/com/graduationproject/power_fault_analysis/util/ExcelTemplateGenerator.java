@@ -12,53 +12,53 @@ public class ExcelTemplateGenerator {
         Workbook workbook = new XSSFWorkbook();
 
         // 1. Device Types
-        createSheet(workbook, "DeviceType", new String[]{"Name"}, new String[][]{
-            {"变压器"}, 
-            {"断路器"}, 
-            {"隔离开关"},
-            {"气体绝缘开关设备(GIS)"},
-            {"电力电缆"},
-            {"架空线路"}
+        createSheet(workbook, "DeviceType", new String[]{"Name", "Description"}, new String[][]{
+            {"变压器", "用于变换电压的设备"}, 
+            {"断路器", "用于切断电路的设备"}, 
+            {"隔离开关", ""},
+            {"气体绝缘开关设备(GIS)", ""},
+            {"电力电缆", ""},
+            {"架空线路", ""}
         });
 
         // 2. Components
-        createSheet(workbook, "Component", new String[]{"Name"}, new String[][]{
+        createSheet(workbook, "Component", new String[]{"Name", "Description"}, new String[][]{
             // Transformer
-            {"绕组"}, {"铁芯"}, {"绝缘油"}, {"分接开关"}, {"套管"},
+            {"绕组", "变压器的核心部件"}, {"铁芯", ""}, {"绝缘油", ""}, {"分接开关", ""}, {"套管", ""},
             // Breaker/GIS
-            {"触头"}, {"灭弧室"}, {"操作机构"}, {"SF6气体系统"},
+            {"触头", ""}, {"灭弧室", ""}, {"操作机构", ""}, {"SF6气体系统", ""},
             // Cable/Line
-            {"电缆绝缘层"}, {"电缆接头"}, {"绝缘子串"}, {"导线"}
+            {"电缆绝缘层", ""}, {"电缆接头", ""}, {"绝缘子串", ""}, {"导线", ""}
         });
 
         // 3. Fault Phenomena
-        createSheet(workbook, "FaultPhenomenon", new String[]{"Name"}, new String[][]{
+        createSheet(workbook, "FaultPhenomenon", new String[]{"Name", "Description"}, new String[][]{
             // Transformer
-            {"油温过高"}, {"瓦斯保护动作"}, {"异响"}, {"油位异常"}, {"套管闪络"},
+            {"油温过高", "油温表指示超过规定值"}, {"瓦斯保护动作", ""}, {"异响", ""}, {"油位异常", ""}, {"套管闪络", ""},
             // Breaker/GIS
-            {"无法合闸"}, {"SF6气压低报警"}, {"局部放电超标"}, {"触头过热"},
+            {"无法合闸", ""}, {"SF6气压低报警", ""}, {"局部放电超标", ""}, {"触头过热", ""},
             // Cable/Line
-            {"电缆接头温度高"}, {"绝缘电阻低"}, {"导线断股"}, {"绝缘子击穿"}
+            {"电缆接头温度高", ""}, {"绝缘电阻低", ""}, {"导线断股", ""}, {"绝缘子击穿", ""}
         });
 
         // 4. Fault Causes
-        createSheet(workbook, "FaultCause", new String[]{"Name"}, new String[][]{
+        createSheet(workbook, "FaultCause", new String[]{"Name", "Description"}, new String[][]{
             // Transformer
-            {"过负荷"}, {"内部短路"}, {"油位不足"}, {"冷却系统故障"}, {"匝间短路"},
+            {"过负荷", "长时间超过额定容量运行"}, {"内部短路", ""}, {"油位不足", ""}, {"冷却系统故障", ""}, {"匝间短路", ""},
             // Breaker/GIS
-            {"机构卡涩"}, {"密封圈老化"}, {"气体泄漏"}, {"接触电阻过大"}, {"绝缘杂质"},
+            {"机构卡涩", ""}, {"密封圈老化", ""}, {"气体泄漏", ""}, {"接触电阻过大", ""}, {"绝缘杂质", ""},
             // Cable/Line
-            {"接头压接不紧"}, {"绝缘受潮老化"}, {"外力破坏"}, {"雷击过电压"}
+            {"接头压接不紧", ""}, {"绝缘受潮老化", ""}, {"外力破坏", ""}, {"雷击过电压", ""}
         });
 
         // 5. Solutions
-        createSheet(workbook, "Solution", new String[]{"Name"}, new String[][]{
+        createSheet(workbook, "Solution", new String[]{"Name", "Description"}, new String[][]{
             // Transformer
-            {"检查负荷状态"}, {"过滤或更换绝缘油"}, {"补油"}, {"维修冷却风扇"}, {"更换线圈"},
+            {"检查负荷状态", "调整运行方式"}, {"过滤或更换绝缘油", ""}, {"补油", ""}, {"维修冷却风扇", ""}, {"更换线圈", ""},
             // Breaker/GIS
-            {"加注润滑油"}, {"更换密封圈"}, {"补充SF6气体"}, {"打磨触头并紧固"}, {"解体检修清洗"},
+            {"加注润滑油", ""}, {"更换密封圈", ""}, {"补充SF6气体", ""}, {"打磨触头并紧固", ""}, {"解体检修清洗", ""},
             // Cable/Line
-            {"重新制作接头"}, {"更换电缆段"}, {"修补导线"}, {"更换绝缘子"}
+            {"重新制作接头", ""}, {"更换电缆段", ""}, {"修补导线", ""}, {"更换绝缘子", ""}
         });
 
         // 6. Relationships: Source | Target | Type

@@ -1,6 +1,6 @@
 <template>
   <el-container class="layout-container">
-    <el-header class="app-header">
+    <el-header v-if="!isLoginPage" class="app-header">
       <div class="header-inner">
         <div class="logo">
           <el-icon :size="28" class="logo-icon"><Lightning /></el-icon>
@@ -25,11 +25,17 @@
           <el-menu-item index="/fault-analysis">
             <el-icon><Search /></el-icon>故障诊断
           </el-menu-item>
-          <el-menu-item index="/data-management">
+          <el-menu-item index="/data-management" v-if="isAdmin">
             <el-icon><Setting /></el-icon>数据管理
+          </el-menu-item>
+          <el-menu-item index="/user-management" v-if="isAdmin">
+             <el-icon><User /></el-icon>用户管理
           </el-menu-item>
         </el-menu>
         <div class="header-right">
+          <span v-if="currentUser" style="margin-right: 15px; color: #fff;">你好, {{ currentUser.username }}</span>
+          <el-button v-if="currentUser" type="info" size="small" @click="handleLogout">退出</el-button>
+          
           <el-tooltip :content="isDark ? '切换白天模式' : '切换夜间模式'" placement="bottom">
             <el-switch
               v-model="isDark"
@@ -37,7 +43,7 @@
               :active-icon="Moon"
               :inactive-icon="Sunny"
               @change="toggleDark"
-              style="--el-switch-on-color: #2c3e50; --el-switch-off-color: #f39c12"
+              style="--el-switch-on-color: #2c3e50; --el-switch-off-color: #f39c12; margin-left: 10px;"
             />
           </el-tooltip>
         </div>
@@ -59,13 +65,18 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { Sunny, Moon } from '@element-plus/icons-vue';
+import { ref, watch, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { Sunny, Moon, User } from '@element-plus/icons-vue';
 
 const activeIndex = ref('/');
 const route = useRoute();
+const router = useRouter();
 const isDark = ref(false);
+const currentUser = ref(null);
+
+const isLoginPage = computed(() => route.path === '/login');
+const isAdmin = computed(() => currentUser.value && currentUser.value.role === 'ADMIN');
 
 const toggleDark = (val) => {
   const html = document.documentElement;
@@ -78,16 +89,34 @@ const toggleDark = (val) => {
   }
 };
 
+const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    currentUser.value = null;
+    router.push('/login');
+};
+
+const checkUser = () => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        currentUser.value = JSON.parse(userStr);
+    } else {
+        currentUser.value = null;
+    }
+};
+
 onMounted(() => {
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     isDark.value = true;
     toggleDark(true);
   }
+  checkUser();
 });
 
 watch(() => route.path, (newPath) => {
   activeIndex.value = newPath;
+  checkUser(); // Re-check user on route change
 }, { immediate: true });
 </script>
 

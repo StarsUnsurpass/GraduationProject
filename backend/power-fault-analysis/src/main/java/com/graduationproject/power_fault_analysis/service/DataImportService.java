@@ -39,46 +39,49 @@ public class DataImportService {
         if (sheet == null) return;
         Iterator<Row> rows = sheet.iterator();
         
-        // Skip header if it exists (assuming first row is header "Name")
+        // Skip header
         if (rows.hasNext()) {
-            Row header = rows.next();
-            // Simple check: if cell 0 is "Name", it's a header. 
-            // If not, we might process it, but usually header exists.
+            rows.next();
         }
 
         while (rows.hasNext()) {
             Row row = rows.next();
-            Cell cell = row.getCell(0);
-            if (cell == null) continue;
+            if (row == null) continue;
             
-            String name = cell.getStringCellValue();
-            if (name == null || name.trim().isEmpty()) continue;
-            name = name.trim();
+            String name = getCellValueAsString(row.getCell(0));
+            String description = getCellValueAsString(row.getCell(1));
+            
+            if (name == null || name.isEmpty()) continue;
 
             switch (type) {
                 case "DeviceType":
                     DeviceType d = new DeviceType();
                     d.setName(name);
+                    d.setDescription(description);
                     knowledgeGraphService.saveDeviceType(d);
                     break;
                 case "Component":
                     Component c = new Component();
                     c.setName(name);
+                    c.setDescription(description);
                     knowledgeGraphService.saveComponent(c);
                     break;
                 case "FaultPhenomenon":
                     FaultPhenomenon fp = new FaultPhenomenon();
                     fp.setName(name);
+                    fp.setDescription(description);
                     knowledgeGraphService.saveFaultPhenomenon(fp);
                     break;
                 case "FaultCause":
                     FaultCause fc = new FaultCause();
                     fc.setName(name);
+                    fc.setDescription(description);
                     knowledgeGraphService.saveFaultCause(fc);
                     break;
                 case "Solution":
                     Solution s = new Solution();
                     s.setName(name);
+                    s.setDescription(description);
                     knowledgeGraphService.saveSolution(s);
                     break;
             }
@@ -89,16 +92,16 @@ public class DataImportService {
         if (sheet == null) return;
         Iterator<Row> rows = sheet.iterator();
 
-        // Skip header: Source | Target | Type
+        // Skip header
         if (rows.hasNext()) rows.next();
 
         while (rows.hasNext()) {
             Row row = rows.next();
-            if (row.getCell(0) == null || row.getCell(1) == null || row.getCell(2) == null) continue;
+            if (row == null) continue;
 
-            String source = row.getCell(0).getStringCellValue().trim();
-            String target = row.getCell(1).getStringCellValue().trim();
-            String type = row.getCell(2).getStringCellValue().trim();
+            String source = getCellValueAsString(row.getCell(0));
+            String target = getCellValueAsString(row.getCell(1));
+            String type = getCellValueAsString(row.getCell(2));
 
             if (source.isEmpty() || target.isEmpty() || type.isEmpty()) continue;
 
@@ -118,10 +121,44 @@ public class DataImportService {
                         break;
                 }
             } catch (Exception e) {
-                // Log error but continue
                 System.err.println("Failed to import relationship: " + source + " -> " + target + " (" + type + ")");
                 e.printStackTrace();
             }
+        }
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    // Avoid scientific notation for integers
+                    double val = cell.getNumericCellValue();
+                    if (val == (long) val) {
+                        return String.format("%d", (long) val);
+                    } else {
+                        return String.valueOf(val);
+                    }
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return cell.getStringCellValue().trim();
+                } catch (IllegalStateException e) {
+                    return String.valueOf(cell.getNumericCellValue());
+                }
+            case BLANK:
+            case _NONE:
+            case ERROR:
+            default:
+                return "";
         }
     }
 }

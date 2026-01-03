@@ -39,6 +39,10 @@
                   </el-form-item>
                 </el-col>
               </el-row>
+
+              <el-form-item label="描述/备注">
+                  <el-input v-model="entityDescription" type="textarea" placeholder="请输入备注信息..." />
+              </el-form-item>
               
               <el-form-item>
                 <el-button type="primary" size="large" @click="createEntity" :icon="Plus">立即创建</el-button>
@@ -47,7 +51,49 @@
           </div>
         </el-tab-pane>
 
-        <!-- Tab 2: Create Relationships -->
+        <!-- Tab 2: Manage Entities -->
+        <el-tab-pane name="manage">
+          <template #label>
+            <span class="custom-tab-label">
+              <el-icon><List /></el-icon>
+              <span>管理实体 (Manage)</span>
+            </span>
+          </template>
+          
+          <div class="form-container">
+            <el-form inline>
+                <el-form-item label="查看类型">
+                    <el-select v-model="manageType" placeholder="请选择类型" style="width: 200px">
+                      <el-option label="设备类型 (DeviceType)" value="devicetype" />
+                      <el-option label="设备部件 (Component)" value="component" />
+                      <el-option label="故障现象 (FaultPhenomenon)" value="faultphenomenon" />
+                      <el-option label="故障原因 (FaultCause)" value="faultcause" />
+                      <el-option label="解决方案 (Solution)" value="solution" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button @click="fetchManageList" :icon="Search">刷新</el-button>
+                </el-form-item>
+            </el-form>
+
+            <el-table :data="manageList" v-loading="manageLoading" border stripe style="width: 100%; margin-top: 20px;">
+                <el-table-column prop="name" label="名称" width="200" />
+                <el-table-column prop="description" label="描述/备注" show-overflow-tooltip />
+                <el-table-column label="操作" width="180">
+                    <template #default="scope">
+                        <el-button size="small" :icon="Edit" circle @click="openEditDialog(scope.row)" style="margin-right: 5px;"/>
+                        <el-popconfirm title="确定删除该实体及相关关系吗？" @confirm="deleteEntity(scope.row.name)">
+                            <template #reference>
+                                <el-button type="danger" size="small" :icon="Delete" circle />
+                            </template>
+                        </el-popconfirm>
+                    </template>
+                </el-table-column>
+            </el-table>
+          </div>
+        </el-tab-pane>
+
+        <!-- Tab 3: Create Relationships -->
         <el-tab-pane name="relationships">
           <template #label>
             <span class="custom-tab-label">
@@ -72,7 +118,6 @@
               <div class="relationship-visualizer" v-if="relationType">
                   <div class="node-box source">
                       <span>起点</span>
-                      <!-- Dynamic Source Selection -->
                       <el-select v-if="relationType === 'has_component'" v-model="sourceId" placeholder="选择设备" filterable>
                          <el-option v-for="item in deviceList" :key="item.name" :label="item.name" :value="item.name" />
                       </el-select>
@@ -94,7 +139,6 @@
 
                   <div class="node-box target">
                       <span>终点</span>
-                      <!-- Dynamic Target Selection -->
                       <el-select v-if="relationType === 'has_component'" v-model="targetId" placeholder="选择部件" filterable>
                          <el-option v-for="item in componentList" :key="item.name" :label="item.name" :value="item.name" />
                       </el-select>
@@ -118,7 +162,41 @@
           </div>
         </el-tab-pane>
 
-        <!-- Tab 3: Batch Import -->
+         <!-- Tab 4: Manage Relationships -->
+        <el-tab-pane name="manage-relations">
+          <template #label>
+            <span class="custom-tab-label">
+              <el-icon><Link /></el-icon>
+              <span>管理关系 (Rel)</span>
+            </span>
+          </template>
+          
+           <div class="form-container">
+               <el-button @click="fetchRelationships" :icon="Search" style="margin-bottom: 15px;">刷新关系列表</el-button>
+               
+               <el-table :data="relationships" v-loading="relationLoading" border stripe style="width: 100%;" height="500">
+                    <el-table-column prop="source" label="起点 (Source)" />
+                    <el-table-column prop="name" label="关系 (Type)" width="180">
+                        <template #default="scope">
+                            <el-tag>{{ scope.row.name }}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="target" label="终点 (Target)" />
+                    <el-table-column label="操作" width="100">
+                        <template #default="scope">
+                            <el-popconfirm title="确定删除此关系？" @confirm="deleteRelationship(scope.row)">
+                                <template #reference>
+                                    <el-button type="danger" size="small" :icon="Delete" circle />
+                                </template>
+                            </el-popconfirm>
+                        </template>
+                    </el-table-column>
+               </el-table>
+           </div>
+        </el-tab-pane>
+
+
+        <!-- Tab 5: Batch Import -->
         <el-tab-pane name="import">
           <template #label>
             <span class="custom-tab-label">
@@ -136,6 +214,10 @@
                     </div>
                 </template>
             </el-alert>
+
+            <div style="margin-bottom: 20px;">
+                <el-button type="success" plain @click="downloadTemplate" :icon="Download">下载 Excel 模板</el-button>
+            </div>
 
             <el-upload
               class="upload-demo"
@@ -161,18 +243,49 @@
 
       </el-tabs>
     </el-card>
+
+    <!-- Edit Dialog -->
+    <el-dialog v-model="showEditDialog" title="编辑实体信息">
+        <el-form :model="editForm">
+            <el-form-item label="名称 (ID)">
+                <el-input v-model="editForm.name" disabled />
+            </el-form-item>
+            <el-form-item label="描述/备注">
+                <el-input v-model="editForm.description" type="textarea" :rows="3" />
+            </el-form-item>
+        </el-form>
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="showEditDialog = false">取消</el-button>
+                <el-button type="primary" @click="updateEntity">保存</el-button>
+            </span>
+        </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { Plus, Check, Edit, CirclePlus, Link, Right, Upload, UploadFilled } from '@element-plus/icons-vue';
+import { Plus, Check, Edit, CirclePlus, Link, Right, Upload, UploadFilled, Download, Delete, List, Search } from '@element-plus/icons-vue';
 
 const activeTab = ref('entities');
 const entityType = ref('devicetype');
 const entityName = ref('');
+const entityDescription = ref('');
+
+// Manage Tab State
+const manageType = ref('devicetype');
+const manageList = ref([]);
+const manageLoading = ref(false);
+
+const showEditDialog = ref(false);
+const editForm = ref({ name: '', description: '', type: '' });
+
+// Manage Relationships State
+const relationships = ref([]);
+const relationLoading = ref(false);
 
 const relationType = ref('has_component');
 const sourceId = ref('');
@@ -185,8 +298,13 @@ const faultList = ref([]);
 const causeList = ref([]);
 const solutionList = ref([]);
 
-const apiBase = 'http://localhost:8081/api/knowledge-graph';
-const uploadUrl = 'http://localhost:8081/api/data/import';
+const apiBase = import.meta.env.VITE_API_BASE_URL + '/api/knowledge-graph';
+const uploadUrl = import.meta.env.VITE_API_BASE_URL + '/api/data/import';
+const templateUrl = import.meta.env.VITE_API_BASE_URL + '/power_fault_template.xlsx';
+
+const downloadTemplate = () => {
+    window.open(templateUrl, '_blank');
+};
 
 // Fetch lists for dropdowns
 const fetchAllLists = async () => {
@@ -208,24 +326,28 @@ const fetchAllLists = async () => {
     }
 };
 
-const refreshLists = () => {
-    sourceId.value = '';
-    targetId.value = '';
-    fetchAllLists(); 
-};
+const fetchManageList = async () => {
+    manageLoading.value = true;
+    try {
+        const res = await axios.get(`${apiBase}/${manageType.value}`);
+        manageList.value = res.data;
+    } catch (e) {
+        ElMessage.error("获取列表失败");
+    } finally {
+        manageLoading.value = false;
+    }
+}
 
-onMounted(() => {
-    fetchAllLists();
-});
-
-const getRelationLabel = (type) => {
-    const map = {
-        'has_component': 'HAS_COMPONENT',
-        'has_fault': 'HAS_POSSIBLE_FAULT',
-        'caused_by': 'CAUSED_BY',
-        'solved_by': 'SOLVED_BY'
-    };
-    return map[type];
+const fetchRelationships = async () => {
+    relationLoading.value = true;
+    try {
+        const res = await axios.get(`${apiBase}/whole-graph`);
+        relationships.value = res.data.links;
+    } catch (e) {
+        ElMessage.error("获取关系列表失败");
+    } finally {
+        relationLoading.value = false;
+    }
 }
 
 const createEntity = async () => {
@@ -236,13 +358,49 @@ const createEntity = async () => {
     
     try {
         await axios.post(`${apiBase}/${entityType.value}`, {
-            name: entityName.value
+            name: entityName.value,
+            description: entityDescription.value
         });
         ElMessage.success(`创建成功: ${entityName.value}`);
         entityName.value = '';
+        entityDescription.value = '';
         fetchAllLists();
-    } catch (error) {
+    } catch {
         ElMessage.error('创建失败，可能已存在。');
+    }
+};
+
+const deleteEntity = async (name) => {
+    try {
+        await axios.delete(`${apiBase}/${manageType.value}/${name}`);
+        ElMessage.success("删除成功");
+        fetchManageList();
+        fetchAllLists(); 
+    } catch (e) {
+        ElMessage.error("删除失败");
+    }
+}
+
+const openEditDialog = (row) => {
+    editForm.value = {
+        name: row.name,
+        description: row.description,
+        type: manageType.value
+    };
+    showEditDialog.value = true;
+};
+
+const updateEntity = async () => {
+    try {
+        await axios.post(`${apiBase}/${editForm.value.type}`, {
+            name: editForm.value.name,
+            description: editForm.value.description
+        });
+        ElMessage.success("更新成功");
+        showEditDialog.value = false;
+        fetchManageList();
+    } catch (e) {
+        ElMessage.error("更新失败");
     }
 };
 
@@ -264,10 +422,49 @@ const createRelationship = async () => {
         ElMessage.success('关联建立成功');
         sourceId.value = '';
         targetId.value = '';
-    } catch (error) {
+    } catch {
          ElMessage.error('关联建立失败');
     }
 };
+
+const deleteRelationship = async (row) => {
+    let url = '';
+    if (row.name === 'HAS_COMPONENT') {
+        url = `${apiBase}/devicetype/${row.source}/component/${row.target}`;
+    } else if (row.name === 'HAS_POSSIBLE_FAULT') {
+        url = `${apiBase}/component/${row.source}/fault/${row.target}`;
+    } else if (row.name === 'CAUSED_BY') {
+         url = `${apiBase}/faultphenomenon/${row.source}/cause/${row.target}`;
+    } else if (row.name === 'SOLVED_BY') {
+         url = `${apiBase}/faultcause/${row.source}/solution/${row.target}`;
+    }
+    
+    if (!url) return;
+
+    try {
+        await axios.delete(url);
+        ElMessage.success("关系删除成功");
+        fetchRelationships();
+    } catch (e) {
+        ElMessage.error("删除失败");
+    }
+}
+
+const refreshLists = () => {
+    sourceId.value = '';
+    targetId.value = '';
+    fetchAllLists(); 
+};
+
+const getRelationLabel = (type) => {
+    const map = {
+        'has_component': 'HAS_COMPONENT',
+        'has_fault': 'HAS_POSSIBLE_FAULT',
+        'caused_by': 'CAUSED_BY',
+        'solved_by': 'SOLVED_BY'
+    };
+    return map[type];
+}
 
 const handleUploadSuccess = () => {
   ElMessage.success('批量导入成功！');
@@ -277,6 +474,22 @@ const handleUploadSuccess = () => {
 const handleUploadError = () => {
   ElMessage.error('导入失败，请检查文件格式。');
 };
+
+// Watchers
+watch(manageType, () => {
+    fetchManageList();
+});
+watch(activeTab, (val) => {
+    if (val === 'manage') {
+        fetchManageList();
+    } else if (val === 'manage-relations') {
+        fetchRelationships();
+    }
+});
+
+onMounted(() => {
+    fetchAllLists();
+});
 </script>
 
 <style scoped>

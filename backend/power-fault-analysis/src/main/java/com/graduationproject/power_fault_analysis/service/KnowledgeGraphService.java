@@ -107,7 +107,34 @@ public class KnowledgeGraphService {
         return solutionRepository.findAll();
     }
 
-    // --- Relationship Management ---
+    // --- Delete Operations ---
+
+    @Transactional
+    public void deleteDeviceType(String name) {
+        deviceTypeRepository.deleteById(name);
+    }
+
+    @Transactional
+    public void deleteComponent(String name) {
+        componentRepository.deleteById(name);
+    }
+
+    @Transactional
+    public void deleteFaultPhenomenon(String name) {
+        faultPhenomenonRepository.deleteById(name);
+    }
+
+    @Transactional
+    public void deleteFaultCause(String name) {
+        faultCauseRepository.deleteById(name);
+    }
+
+    @Transactional
+    public void deleteSolution(String name) {
+        solutionRepository.deleteById(name);
+    }
+
+    // --- Relationship Management (Add & Remove) ---
 
     @Transactional
     public void addComponentToDeviceType(String deviceName, String componentName) {
@@ -117,6 +144,15 @@ public class KnowledgeGraphService {
         if (device.getComponents() == null) device.setComponents(new ArrayList<>());
         device.getComponents().add(component);
         deviceTypeRepository.save(device);
+    }
+
+    @Transactional
+    public void removeComponentFromDeviceType(String deviceName, String componentName) {
+        DeviceType device = deviceTypeRepository.findById(deviceName).orElseThrow(() -> new RuntimeException("Device not found"));
+        if (device.getComponents() != null) {
+            device.getComponents().removeIf(c -> c.getName().equals(componentName));
+            deviceTypeRepository.save(device);
+        }
     }
 
     @Transactional
@@ -130,6 +166,15 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    public void removeFaultFromComponent(String componentName, String faultName) {
+        Component component = componentRepository.findById(componentName).orElseThrow(() -> new RuntimeException("Component not found"));
+        if (component.getPossibleFaults() != null) {
+            component.getPossibleFaults().removeIf(f -> f.getName().equals(faultName));
+            componentRepository.save(component);
+        }
+    }
+
+    @Transactional
     public void addCauseToPhenomenon(String phenomenonName, String causeName) {
         FaultPhenomenon phenomenon = faultPhenomenonRepository.findById(phenomenonName).orElseThrow(() -> new RuntimeException("Phenomenon not found"));
         FaultCause cause = faultCauseRepository.findById(causeName).orElseThrow(() -> new RuntimeException("Cause not found"));
@@ -140,6 +185,15 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    public void removeCauseFromPhenomenon(String phenomenonName, String causeName) {
+        FaultPhenomenon phenomenon = faultPhenomenonRepository.findById(phenomenonName).orElseThrow(() -> new RuntimeException("Phenomenon not found"));
+        if (phenomenon.getCauses() != null) {
+            phenomenon.getCauses().removeIf(c -> c.getName().equals(causeName));
+            faultPhenomenonRepository.save(phenomenon);
+        }
+    }
+
+    @Transactional
     public void addSolutionToCause(String causeName, String solutionName) {
         FaultCause cause = faultCauseRepository.findById(causeName).orElseThrow(() -> new RuntimeException("Cause not found"));
         Solution solution = solutionRepository.findById(solutionName).orElseThrow(() -> new RuntimeException("Solution not found"));
@@ -147,6 +201,15 @@ public class KnowledgeGraphService {
         if (cause.getSolutions() == null) cause.setSolutions(new ArrayList<>());
         cause.getSolutions().add(solution);
         faultCauseRepository.save(cause);
+    }
+
+    @Transactional
+    public void removeSolutionFromCause(String causeName, String solutionName) {
+        FaultCause cause = faultCauseRepository.findById(causeName).orElseThrow(() -> new RuntimeException("Cause not found"));
+        if (cause.getSolutions() != null) {
+            cause.getSolutions().removeIf(s -> s.getName().equals(solutionName));
+            faultCauseRepository.save(cause);
+        }
     }
 
     // --- Graph Data & Analysis ---

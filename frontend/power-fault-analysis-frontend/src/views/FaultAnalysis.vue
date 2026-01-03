@@ -1,7 +1,6 @@
 <template>
   <div class="fault-analysis-container">
-    <transition name="slide-up">
-        <div class="search-section" :class="{ 'has-results': searched }">
+    <div class="search-section" :class="{ 'has-results': searched }">
             <h1 v-if="!searched" class="page-title">故障智能诊断</h1>
             <p v-if="!searched" class="page-subtitle">输入故障现象，系统将自动分析原因并推荐解决方案</p>
             
@@ -30,7 +29,6 @@
                  <el-tag class="tag-item" @click="quickSearch('电压不稳')">电压不稳</el-tag>
              </div>
         </div>
-    </transition>
     
     <div v-if="resultFound" class="result-area">
          <div class="result-header">
@@ -80,7 +78,7 @@ const handleDiagnose = async () => {
     resultFound.value = false;
     
     try {
-        const response = await axios.get(`http://localhost:8081/api/fault-analysis/diagnose`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/fault-analysis/diagnose`, {
             params: { phenomenon: searchQuery.value }
         });
         

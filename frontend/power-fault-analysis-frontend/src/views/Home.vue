@@ -113,10 +113,10 @@ const stats = ref({
 onMounted(async () => {
     try {
         const [d, c, f, s] = await Promise.all([
-             axios.get('http://localhost:8081/api/knowledge-graph/devicetype'),
-             axios.get('http://localhost:8081/api/knowledge-graph/component'),
-             axios.get('http://localhost:8081/api/knowledge-graph/faultphenomenon'),
-             axios.get('http://localhost:8081/api/knowledge-graph/solution'),
+             axios.get(import.meta.env.VITE_API_BASE_URL + '/api/knowledge-graph/devicetype'),
+             axios.get(import.meta.env.VITE_API_BASE_URL + '/api/knowledge-graph/component'),
+             axios.get(import.meta.env.VITE_API_BASE_URL + '/api/knowledge-graph/faultphenomenon'),
+             axios.get(import.meta.env.VITE_API_BASE_URL + '/api/knowledge-graph/solution'),
         ]);
         stats.value.deviceTypes = d.data.length;
         stats.value.components = c.data.length;

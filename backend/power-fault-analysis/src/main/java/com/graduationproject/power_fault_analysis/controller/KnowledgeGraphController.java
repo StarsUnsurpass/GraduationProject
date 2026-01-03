@@ -49,6 +49,18 @@ public class KnowledgeGraphController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/devicetype/{deviceName}/component/{componentName}")
+    public ResponseEntity<Void> removeComponentFromDeviceType(@PathVariable String deviceName, @PathVariable String componentName) {
+        knowledgeGraphService.removeComponentFromDeviceType(deviceName, componentName);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/devicetype/{name}")
+    public ResponseEntity<Void> deleteDeviceType(@PathVariable String name) {
+        knowledgeGraphService.deleteDeviceType(name);
+        return ResponseEntity.ok().build();
+    }
+
     // --- Component Endpoints ---
     @PostMapping("/component")
     public ResponseEntity<Component> createComponent(@RequestBody Component component) {
@@ -70,6 +82,18 @@ public class KnowledgeGraphController {
     @PostMapping("/component/{componentName}/fault/{faultName}")
     public ResponseEntity<Void> addFaultToComponent(@PathVariable String componentName, @PathVariable String faultName) {
         knowledgeGraphService.addFaultToComponent(componentName, faultName);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/component/{componentName}/fault/{faultName}")
+    public ResponseEntity<Void> removeFaultFromComponent(@PathVariable String componentName, @PathVariable String faultName) {
+        knowledgeGraphService.removeFaultFromComponent(componentName, faultName);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/component/{name}")
+    public ResponseEntity<Void> deleteComponent(@PathVariable String name) {
+        knowledgeGraphService.deleteComponent(name);
         return ResponseEntity.ok().build();
     }
 
@@ -97,6 +121,18 @@ public class KnowledgeGraphController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/faultphenomenon/{phenomenonName}/cause/{causeName}")
+    public ResponseEntity<Void> removeCauseFromPhenomenon(@PathVariable String phenomenonName, @PathVariable String causeName) {
+        knowledgeGraphService.removeCauseFromPhenomenon(phenomenonName, causeName);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/faultphenomenon/{name}")
+    public ResponseEntity<Void> deleteFaultPhenomenon(@PathVariable String name) {
+        knowledgeGraphService.deleteFaultPhenomenon(name);
+        return ResponseEntity.ok().build();
+    }
+
     // --- FaultCause Endpoints ---
     @PostMapping("/faultcause")
     public ResponseEntity<FaultCause> createFaultCause(@RequestBody FaultCause faultCause) {
@@ -121,6 +157,18 @@ public class KnowledgeGraphController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/faultcause/{causeName}/solution/{solutionName}")
+    public ResponseEntity<Void> removeSolutionFromCause(@PathVariable String causeName, @PathVariable String solutionName) {
+        knowledgeGraphService.removeSolutionFromCause(causeName, solutionName);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/faultcause/{name}")
+    public ResponseEntity<Void> deleteFaultCause(@PathVariable String name) {
+        knowledgeGraphService.deleteFaultCause(name);
+        return ResponseEntity.ok().build();
+    }
+
     // --- Solution Endpoints ---
     @PostMapping("/solution")
     public ResponseEntity<Solution> createSolution(@RequestBody Solution solution) {
@@ -137,5 +185,11 @@ public class KnowledgeGraphController {
     @GetMapping("/solution")
     public ResponseEntity<List<Solution>> getAllSolutions() {
         return ResponseEntity.ok(knowledgeGraphService.findAllSolutions());
+    }
+
+    @DeleteMapping("/solution/{name}")
+    public ResponseEntity<Void> deleteSolution(@PathVariable String name) {
+        knowledgeGraphService.deleteSolution(name);
+        return ResponseEntity.ok().build();
     }
 }

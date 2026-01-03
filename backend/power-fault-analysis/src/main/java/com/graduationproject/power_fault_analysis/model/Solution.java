@@ -2,21 +2,33 @@ package com.graduationproject.power_fault_analysis.model;
 
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Property;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
-@Node("Solution")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Node
 public class Solution {
-
     @Id
-    @Property("name")
     private String name;
+    
+    private String description;
 
-    // Additional properties can be added later
+    public Solution() {}
+
+    public Solution(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }
