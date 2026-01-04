@@ -33,9 +33,10 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import * as echarts from 'echarts';
 import axios from 'axios';
+import { Filter } from '@element-plus/icons-vue';
 
 const chartInstance = ref(null);
 const fullData = ref({ nodes: [], links: [] });
@@ -178,6 +179,12 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to fetch graph data:', error);
   }
+});
+
+onUnmounted(() => {
+    if (chartInstance.value) {
+        chartInstance.value.dispose();
+    }
 });
 </script>
 

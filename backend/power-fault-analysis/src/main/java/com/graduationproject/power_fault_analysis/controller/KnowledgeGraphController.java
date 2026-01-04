@@ -1,5 +1,6 @@
 package com.graduationproject.power_fault_analysis.controller;
 
+import com.graduationproject.power_fault_analysis.dto.EntityRenameRequest;
 import com.graduationproject.power_fault_analysis.dto.GraphData;
 import com.graduationproject.power_fault_analysis.model.*;
 import com.graduationproject.power_fault_analysis.service.KnowledgeGraphService;
@@ -17,6 +18,13 @@ public class KnowledgeGraphController {
 
     public KnowledgeGraphController(KnowledgeGraphService knowledgeGraphService) {
         this.knowledgeGraphService = knowledgeGraphService;
+    }
+
+    // --- General Operations ---
+    @PutMapping("/rename")
+    public ResponseEntity<Void> renameEntity(@RequestBody EntityRenameRequest request) {
+        knowledgeGraphService.renameEntity(request.getLabel(), request.getOldName(), request.getNewName());
+        return ResponseEntity.ok().build();
     }
 
     // --- Graph Data ---

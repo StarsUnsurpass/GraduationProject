@@ -101,6 +101,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { Cpu, Connection, Warning, CircleCheck, DataAnalysis } from '@element-plus/icons-vue';
 
 const stats = ref({
   deviceTypes: 0,

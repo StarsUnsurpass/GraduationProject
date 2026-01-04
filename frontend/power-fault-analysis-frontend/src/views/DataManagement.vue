@@ -248,7 +248,7 @@
     <el-dialog v-model="showEditDialog" title="编辑实体信息">
         <el-form :model="editForm">
             <el-form-item label="名称 (ID)">
-                <el-input v-model="editForm.name" disabled />
+                <el-input v-model="editForm.name" placeholder="修改名称..." />
             </el-form-item>
             <el-form-item label="描述/备注">
                 <el-input v-model="editForm.description" type="textarea" :rows="3" />
