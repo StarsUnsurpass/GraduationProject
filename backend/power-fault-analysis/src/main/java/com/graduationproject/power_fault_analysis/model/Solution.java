@@ -2,6 +2,8 @@ package com.graduationproject.power_fault_analysis.model;
 
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import java.util.Map;
+import java.util.HashMap;
 
 @Node
 public class Solution {
@@ -9,6 +11,8 @@ public class Solution {
     private String name;
     
     private String description;
+    
+    private String attributes;
 
     public Solution() {}
 
@@ -30,5 +34,13 @@ public class Solution {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(String attributes) {
+        this.attributes = attributes;
     }
 }

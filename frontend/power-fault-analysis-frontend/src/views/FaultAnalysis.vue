@@ -38,6 +38,27 @@
          <el-card shadow="never" class="graph-card">
             <div id="diagnosis-graph" style="width: 100%; height: 600px;"></div>
          </el-card>
+
+         <!-- Solution List -->
+         <div v-if="solutions.length > 0" class="solution-section">
+             <h3><el-icon><SuccessFilled /></el-icon> 维护建议 / 解决方案</h3>
+             <el-timeline>
+                <el-timeline-item
+                  v-for="(sol, index) in solutions"
+                  :key="index"
+                  type="success"
+                  size="large"
+                  :timestamp="'建议 ' + (index + 1)"
+                  placement="top"
+                >
+                  <el-card class="solution-card">
+                    <h4>{{ sol.name }}</h4>
+                    <p>{{ sol.description || '暂无详细描述' }}</p>
+                    <p v-if="sol.attributes" class="attr-text">参数参考: {{ sol.attributes }}</p>
+                  </el-card>
+                </el-timeline-item>
+             </el-timeline>
+         </div>
     </div>
 
     <div v-else-if="searched && !resultFound" class="no-result">
@@ -51,10 +72,12 @@
 import { ref, nextTick, onMounted } from 'vue';
 import axios from 'axios';
 import * as echarts from 'echarts';
+import { Search, DataAnalysis, SuccessFilled } from '@element-plus/icons-vue';
 
 const searchQuery = ref('');
 const resultFound = ref(false);
 const searched = ref(false);
+const solutions = ref([]);
 let chartInstance = null;
 
 // Detect dark mode
@@ -69,6 +92,7 @@ const resetSearch = () => {
     searched.value = false;
     resultFound.value = false;
     searchQuery.value = '';
+    solutions.value = [];
 }
 
 const handleDiagnose = async () => {
@@ -76,6 +100,7 @@ const handleDiagnose = async () => {
     
     searched.value = true;
     resultFound.value = false;
+    solutions.value = [];
     
     try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/fault-analysis/diagnose`, {
@@ -84,6 +109,7 @@ const handleDiagnose = async () => {
         
         if (response.data && response.data.nodes && response.data.nodes.length > 0) {
             resultFound.value = true;
+            solutions.value = response.data.nodes.filter(n => n.category === 'Solution');
             await nextTick();
             initChart(response.data);
         } else {

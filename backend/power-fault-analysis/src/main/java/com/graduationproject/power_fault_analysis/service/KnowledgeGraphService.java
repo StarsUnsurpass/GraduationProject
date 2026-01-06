@@ -244,17 +244,12 @@ public class KnowledgeGraphService {
         Set<GraphNode> nodes = new HashSet<>();
         Set<GraphLink> links = new HashSet<>();
 
-        // Helper to add node
-        // (Set handles duplicates based on equals/hashCode. Lombok @Data generates them based on all fields.
-        // So strict duplicates are handled. If name matches but category differs (unlikely), it might duplicate.
-        // For safety, we can trust the Set.)
-
         // 1. DeviceTypes
         for (DeviceType d : deviceTypeRepository.findAll()) {
-            nodes.add(new GraphNode(d.getName(), d.getName(), "DeviceType"));
+            nodes.add(new GraphNode(d.getName(), d.getName(), "DeviceType", d.getDescription(), d.getAttributes()));
             if (d.getComponents() != null) {
                 for (Component c : d.getComponents()) {
-                    nodes.add(new GraphNode(c.getName(), c.getName(), "Component"));
+                    nodes.add(new GraphNode(c.getName(), c.getName(), "Component", c.getDescription(), c.getAttributes()));
                     links.add(new GraphLink(d.getName(), c.getName(), "HAS_COMPONENT"));
                 }
             }
@@ -262,10 +257,10 @@ public class KnowledgeGraphService {
 
         // 2. Components
         for (Component c : componentRepository.findAll()) {
-            nodes.add(new GraphNode(c.getName(), c.getName(), "Component"));
+            nodes.add(new GraphNode(c.getName(), c.getName(), "Component", c.getDescription(), c.getAttributes()));
             if (c.getPossibleFaults() != null) {
                 for (FaultPhenomenon p : c.getPossibleFaults()) {
-                    nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon"));
+                    nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon", p.getDescription(), p.getAttributes()));
                     links.add(new GraphLink(c.getName(), p.getName(), "HAS_POSSIBLE_FAULT"));
                 }
             }
@@ -273,10 +268,10 @@ public class KnowledgeGraphService {
 
         // 3. FaultPhenomena
         for (FaultPhenomenon p : faultPhenomenonRepository.findAll()) {
-            nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon"));
+            nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon", p.getDescription(), p.getAttributes()));
             if (p.getCauses() != null) {
                 for (FaultCause c : p.getCauses()) {
-                    nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause"));
+                    nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause", c.getDescription(), c.getAttributes()));
                     links.add(new GraphLink(p.getName(), c.getName(), "CAUSED_BY"));
                 }
             }
@@ -284,10 +279,10 @@ public class KnowledgeGraphService {
 
         // 4. FaultCauses
         for (FaultCause c : faultCauseRepository.findAll()) {
-            nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause"));
+            nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause", c.getDescription(), c.getAttributes()));
             if (c.getSolutions() != null) {
                 for (Solution s : c.getSolutions()) {
-                    nodes.add(new GraphNode(s.getName(), s.getName(), "Solution"));
+                    nodes.add(new GraphNode(s.getName(), s.getName(), "Solution", s.getDescription(), s.getAttributes()));
                     links.add(new GraphLink(c.getName(), s.getName(), "SOLVED_BY"));
                 }
             }
@@ -295,7 +290,7 @@ public class KnowledgeGraphService {
 
         // 5. Solutions
         for (Solution s : solutionRepository.findAll()) {
-            nodes.add(new GraphNode(s.getName(), s.getName(), "Solution"));
+            nodes.add(new GraphNode(s.getName(), s.getName(), "Solution", s.getDescription(), s.getAttributes()));
         }
 
         return new GraphData(new ArrayList<>(nodes), new ArrayList<>(links));
@@ -309,24 +304,26 @@ public class KnowledgeGraphService {
         Set<GraphNode> nodes = new HashSet<>();
         Set<GraphLink> links = new HashSet<>();
 
-        nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon"));
+        nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon", p.getDescription(), p.getAttributes()));
 
-        // Use a recursive search or just depth 2 (Cause -> Solution)
-        // Since SDN fetch depth is usually 1, we might need to fetch causes explicitly to get their solutions.
-        
         if (p.getCauses() != null) {
             for (FaultCause cStub : p.getCauses()) {
                 // Fetch full cause to get solutions
                 Optional<FaultCause> causeOpt = faultCauseRepository.findById(cStub.getName());
                 if (causeOpt.isPresent()) {
                     FaultCause c = causeOpt.get();
-                    nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause"));
+                    nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause", c.getDescription(), c.getAttributes()));
                     links.add(new GraphLink(p.getName(), c.getName(), "CAUSED_BY"));
                     
                     if (c.getSolutions() != null) {
-                        for (Solution s : c.getSolutions()) {
-                            nodes.add(new GraphNode(s.getName(), s.getName(), "Solution"));
-                            links.add(new GraphLink(c.getName(), s.getName(), "SOLVED_BY"));
+                        for (Solution sStub : c.getSolutions()) {
+                            // Fetch full solution to get description/attributes
+                             Optional<Solution> solOpt = solutionRepository.findById(sStub.getName());
+                             if(solOpt.isPresent()) {
+                                 Solution s = solOpt.get();
+                                 nodes.add(new GraphNode(s.getName(), s.getName(), "Solution", s.getDescription(), s.getAttributes()));
+                                 links.add(new GraphLink(c.getName(), s.getName(), "SOLVED_BY"));
+                             }
                         }
                     }
                 }

@@ -4,7 +4,10 @@ import com.graduationproject.power_fault_analysis.model.User;
 import com.graduationproject.power_fault_analysis.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,27 +21,32 @@ public class UserService implements CommandLineRunner {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public void run(String... args) {
         System.out.println(">>> [INIT] Starting UserService Initialization...");
         try {
-            // Check if admin exists
-            boolean exists = userRepository.existsById("admin");
-            if (!exists) {
-                User admin = new User("admin", "admin123", "ADMIN");
+            String adminUser = "admin";
+            String adminPass = "admin123";
+            String hashedPass = hashPassword(adminPass);
+            
+            Optional<User> existingAdmin = userRepository.findById(adminUser);
+            
+            if (existingAdmin.isEmpty()) {
+                User admin = new User(adminUser, hashedPass, "ADMIN");
                 userRepository.save(admin);
-                System.out.println(">>> [INIT] Created default admin user: admin / admin123");
+                System.out.println(">>> [INIT] Created default admin user: admin / " + adminPass);
             } else {
-                // Ensure password is correct even if it exists
-                User admin = userRepository.findById("admin").get();
-                admin.setPassword("admin123");
-                userRepository.save(admin);
-                System.out.println(">>> [INIT] Admin user already exists. Password verified/reset to admin123.");
+                // Always reset admin password to ensure access if hashing logic changes
+                User admin = existingAdmin.get();
+                if (!admin.getPassword().equals(hashedPass)) {
+                    admin.setPassword(hashedPass);
+                    userRepository.save(admin);
+                    System.out.println(">>> [INIT] Admin password updated/reset to default.");
+                }
             }
         } catch (Exception e) {
             System.err.println(">>> [INIT] CRITICAL ERROR: Could not connect to Neo4j to initialize users!");
             System.err.println(">>> [INIT] Error Details: " + e.getMessage());
-            // Don't throw, let app start so user can see health check
         }
     }
 
@@ -46,13 +54,14 @@ public class UserService implements CommandLineRunner {
         if (username == null || password == null) return null;
         
         String cleanUsername = username.trim();
-        System.out.println(">>> [LOGIN] Attempt: " + cleanUsername);
+        // System.out.println(">>> [LOGIN] Attempt: " + cleanUsername);
         
         try {
             Optional<User> userOpt = userRepository.findById(cleanUsername);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
-                if (user.getPassword().equals(password)) {
+                String hashedInput = hashPassword(password);
+                if (user.getPassword().equals(hashedInput)) {
                     return user;
                 } else {
                     System.out.println(">>> [LOGIN] Fail: Password mismatch for " + cleanUsername);
@@ -67,6 +76,10 @@ public class UserService implements CommandLineRunner {
     }
 
     public User createUser(User user) {
+        // Hash password before saving
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            user.setPassword(hashPassword(user.getPassword()));
+        }
         return userRepository.save(user);
     }
 
@@ -80,8 +93,31 @@ public class UserService implements CommandLineRunner {
 
     public User updateUser(String username, User userDetails) {
         User user = userRepository.findById(username).orElseThrow(() -> new RuntimeException("User not found"));
-        user.setPassword(userDetails.getPassword());
+        
+        // Only update password if a new one is provided
+        if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
+             user.setPassword(hashPassword(userDetails.getPassword()));
+        }
+        
         user.setRole(userDetails.getRole());
         return userRepository.save(user);
+    }
+    
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] encodedhash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder(2 * encodedhash.length);
+            for (int i = 0; i < encodedhash.length; i++) {
+                String hex = Integer.toHexString(0xff & encodedhash[i]);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error hashing password", e);
+        }
     }
 }

@@ -6,6 +6,8 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 @Node
 public class DeviceType {
@@ -13,6 +15,8 @@ public class DeviceType {
     private String name;
     
     private String description;
+    
+    private String attributes;
 
     @Relationship(type = "HAS_COMPONENT", direction = Relationship.Direction.OUTGOING)
     private List<Component> components;
@@ -38,6 +42,14 @@ public class DeviceType {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(String attributes) {
+        this.attributes = attributes;
     }
 
     public List<Component> getComponents() {

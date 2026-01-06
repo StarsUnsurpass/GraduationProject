@@ -50,6 +50,7 @@ public class DataImportService {
             
             String name = getCellValueAsString(row.getCell(0));
             String description = getCellValueAsString(row.getCell(1));
+            String attributes = getCellValueAsString(row.getCell(2)); // Read attributes from 3rd column
             
             if (name == null || name.isEmpty()) continue;
 
@@ -58,30 +59,35 @@ public class DataImportService {
                     DeviceType d = new DeviceType();
                     d.setName(name);
                     d.setDescription(description);
+                    d.setAttributes(attributes);
                     knowledgeGraphService.saveDeviceType(d);
                     break;
                 case "Component":
                     Component c = new Component();
                     c.setName(name);
                     c.setDescription(description);
+                    c.setAttributes(attributes);
                     knowledgeGraphService.saveComponent(c);
                     break;
                 case "FaultPhenomenon":
                     FaultPhenomenon fp = new FaultPhenomenon();
                     fp.setName(name);
                     fp.setDescription(description);
+                    fp.setAttributes(attributes);
                     knowledgeGraphService.saveFaultPhenomenon(fp);
                     break;
                 case "FaultCause":
                     FaultCause fc = new FaultCause();
                     fc.setName(name);
                     fc.setDescription(description);
+                    fc.setAttributes(attributes);
                     knowledgeGraphService.saveFaultCause(fc);
                     break;
                 case "Solution":
                     Solution s = new Solution();
                     s.setName(name);
                     s.setDescription(description);
+                    s.setAttributes(attributes);
                     knowledgeGraphService.saveSolution(s);
                     break;
             }

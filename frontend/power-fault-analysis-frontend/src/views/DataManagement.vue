@@ -43,6 +43,10 @@
               <el-form-item label="描述/备注">
                   <el-input v-model="entityDescription" type="textarea" placeholder="请输入备注信息..." />
               </el-form-item>
+
+              <el-form-item label="实体属性 (JSON/文本)">
+                  <el-input v-model="entityAttributes" type="textarea" placeholder="例如: 电压: 220V (换行) 电流: 5A" />
+              </el-form-item>
               
               <el-form-item>
                 <el-button type="primary" size="large" @click="createEntity" :icon="Plus">立即创建</el-button>
@@ -79,6 +83,7 @@
             <el-table :data="manageList" v-loading="manageLoading" border stripe style="width: 100%; margin-top: 20px;">
                 <el-table-column prop="name" label="名称" width="200" />
                 <el-table-column prop="description" label="描述/备注" show-overflow-tooltip />
+                <el-table-column prop="attributes" label="属性" show-overflow-tooltip />
                 <el-table-column label="操作" width="180">
                     <template #default="scope">
                         <el-button size="small" :icon="Edit" circle @click="openEditDialog(scope.row)" style="margin-right: 5px;"/>
@@ -248,10 +253,13 @@
     <el-dialog v-model="showEditDialog" title="编辑实体信息">
         <el-form :model="editForm">
             <el-form-item label="名称 (ID)">
-                <el-input v-model="editForm.name" placeholder="修改名称..." />
+                <el-input v-model="editForm.name" placeholder="修改名称..." disabled />
             </el-form-item>
             <el-form-item label="描述/备注">
                 <el-input v-model="editForm.description" type="textarea" :rows="3" />
+            </el-form-item>
+            <el-form-item label="实体属性">
+                <el-input v-model="editForm.attributes" type="textarea" :rows="3" />
             </el-form-item>
         </el-form>
         <template #footer>
@@ -274,6 +282,7 @@ const activeTab = ref('entities');
 const entityType = ref('devicetype');
 const entityName = ref('');
 const entityDescription = ref('');
+const entityAttributes = ref('');
 
 // Manage Tab State
 const manageType = ref('devicetype');
@@ -281,7 +290,7 @@ const manageList = ref([]);
 const manageLoading = ref(false);
 
 const showEditDialog = ref(false);
-const editForm = ref({ name: '', description: '', type: '' });
+const editForm = ref({ name: '', description: '', attributes: '', type: '' });
 
 // Manage Relationships State
 const relationships = ref([]);
@@ -359,11 +368,13 @@ const createEntity = async () => {
     try {
         await axios.post(`${apiBase}/${entityType.value}`, {
             name: entityName.value,
-            description: entityDescription.value
+            description: entityDescription.value,
+            attributes: entityAttributes.value
         });
         ElMessage.success(`创建成功: ${entityName.value}`);
         entityName.value = '';
         entityDescription.value = '';
+        entityAttributes.value = '';
         fetchAllLists();
     } catch {
         ElMessage.error('创建失败，可能已存在。');
@@ -385,6 +396,7 @@ const openEditDialog = (row) => {
     editForm.value = {
         name: row.name,
         description: row.description,
+        attributes: row.attributes,
         type: manageType.value
     };
     showEditDialog.value = true;
@@ -394,7 +406,8 @@ const updateEntity = async () => {
     try {
         await axios.post(`${apiBase}/${editForm.value.type}`, {
             name: editForm.value.name,
-            description: editForm.value.description
+            description: editForm.value.description,
+            attributes: editForm.value.attributes
         });
         ElMessage.success("更新成功");
         showEditDialog.value = false;

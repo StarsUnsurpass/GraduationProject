@@ -6,6 +6,8 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 @Node
 public class Component {
@@ -13,6 +15,9 @@ public class Component {
     private String name;
     
     private String description;
+    
+    // stored as JSON or Key-Value text
+    private String attributes;
 
     @Relationship(type = "HAS_POSSIBLE_FAULT", direction = Relationship.Direction.OUTGOING)
     private List<FaultPhenomenon> possibleFaults;
@@ -38,6 +43,14 @@ public class Component {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(String attributes) {
+        this.attributes = attributes;
     }
 
     public List<FaultPhenomenon> getPossibleFaults() {

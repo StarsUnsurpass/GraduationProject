@@ -66,7 +66,7 @@
 
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue';
-import { useRoute, useRouter } = 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Sunny, Moon, User, Lightning, HomeFilled, Share, Search, Setting } from '@element-plus/icons-vue';
 
 const activeIndex = ref('/');

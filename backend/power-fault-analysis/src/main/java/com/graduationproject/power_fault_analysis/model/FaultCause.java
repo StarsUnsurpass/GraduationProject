@@ -6,6 +6,8 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 @Node
 public class FaultCause {
@@ -13,6 +15,8 @@ public class FaultCause {
     private String name;
 
     private String description;
+    
+    private String attributes;
 
     @Relationship(type = "SOLVED_BY", direction = Relationship.Direction.OUTGOING)
     private List<Solution> solutions;
@@ -38,6 +42,14 @@ public class FaultCause {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(String attributes) {
+        this.attributes = attributes;
     }
 
     public List<Solution> getSolutions() {
