@@ -5,6 +5,9 @@ import com.graduationproject.power_fault_analysis.dto.GraphLink;
 import com.graduationproject.power_fault_analysis.dto.GraphNode;
 import com.graduationproject.power_fault_analysis.model.*;
 import com.graduationproject.power_fault_analysis.repository.*;
+import org.neo4j.driver.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +46,7 @@ public class KnowledgeGraphService {
 
     // DeviceType
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public DeviceType saveDeviceType(DeviceType deviceType) {
         return deviceTypeRepository.save(deviceType);
     }
@@ -57,6 +61,7 @@ public class KnowledgeGraphService {
 
     // Component
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public Component saveComponent(Component component) {
         return componentRepository.save(component);
     }
@@ -71,6 +76,7 @@ public class KnowledgeGraphService {
 
     // FaultPhenomenon
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public FaultPhenomenon saveFaultPhenomenon(FaultPhenomenon faultPhenomenon) {
         return faultPhenomenonRepository.save(faultPhenomenon);
     }
@@ -85,6 +91,7 @@ public class KnowledgeGraphService {
 
     // FaultCause
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public FaultCause saveFaultCause(FaultCause faultCause) {
         return faultCauseRepository.save(faultCause);
     }
@@ -99,6 +106,7 @@ public class KnowledgeGraphService {
 
     // Solution
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public Solution saveSolution(Solution solution) {
         return solutionRepository.save(solution);
     }
@@ -113,6 +121,7 @@ public class KnowledgeGraphService {
 
     // --- Rename Operation ---
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void renameEntity(String label, String oldName, String newName) {
         if (!Set.of("DeviceType", "Component", "FaultPhenomenon", "FaultCause", "Solution").contains(label)) {
             throw new IllegalArgumentException("Invalid entity label: " + label);
@@ -136,26 +145,31 @@ public class KnowledgeGraphService {
     // --- Delete Operations ---
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void deleteDeviceType(String name) {
         deviceTypeRepository.deleteById(name);
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void deleteComponent(String name) {
         componentRepository.deleteById(name);
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void deleteFaultPhenomenon(String name) {
         faultPhenomenonRepository.deleteById(name);
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void deleteFaultCause(String name) {
         faultCauseRepository.deleteById(name);
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void deleteSolution(String name) {
         solutionRepository.deleteById(name);
     }
@@ -163,6 +177,7 @@ public class KnowledgeGraphService {
     // --- Relationship Management (Add & Remove) ---
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void addComponentToDeviceType(String deviceName, String componentName) {
         DeviceType device = deviceTypeRepository.findById(deviceName).orElseThrow(() -> new RuntimeException("Device not found"));
         Component component = componentRepository.findById(componentName).orElseThrow(() -> new RuntimeException("Component not found"));
@@ -173,6 +188,7 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void removeComponentFromDeviceType(String deviceName, String componentName) {
         DeviceType device = deviceTypeRepository.findById(deviceName).orElseThrow(() -> new RuntimeException("Device not found"));
         if (device.getComponents() != null) {
@@ -182,6 +198,7 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void addFaultToComponent(String componentName, String faultName) {
         Component component = componentRepository.findById(componentName).orElseThrow(() -> new RuntimeException("Component not found"));
         FaultPhenomenon fault = faultPhenomenonRepository.findById(faultName).orElseThrow(() -> new RuntimeException("Fault not found"));
@@ -192,6 +209,7 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void removeFaultFromComponent(String componentName, String faultName) {
         Component component = componentRepository.findById(componentName).orElseThrow(() -> new RuntimeException("Component not found"));
         if (component.getPossibleFaults() != null) {
@@ -201,6 +219,7 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void addCauseToPhenomenon(String phenomenonName, String causeName) {
         FaultPhenomenon phenomenon = faultPhenomenonRepository.findById(phenomenonName).orElseThrow(() -> new RuntimeException("Phenomenon not found"));
         FaultCause cause = faultCauseRepository.findById(causeName).orElseThrow(() -> new RuntimeException("Cause not found"));
@@ -211,6 +230,7 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void removeCauseFromPhenomenon(String phenomenonName, String causeName) {
         FaultPhenomenon phenomenon = faultPhenomenonRepository.findById(phenomenonName).orElseThrow(() -> new RuntimeException("Phenomenon not found"));
         if (phenomenon.getCauses() != null) {
@@ -220,6 +240,7 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void addSolutionToCause(String causeName, String solutionName) {
         FaultCause cause = faultCauseRepository.findById(causeName).orElseThrow(() -> new RuntimeException("Cause not found"));
         Solution solution = solutionRepository.findById(solutionName).orElseThrow(() -> new RuntimeException("Solution not found"));
@@ -230,6 +251,7 @@ public class KnowledgeGraphService {
     }
 
     @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void removeSolutionFromCause(String causeName, String solutionName) {
         FaultCause cause = faultCauseRepository.findById(causeName).orElseThrow(() -> new RuntimeException("Cause not found"));
         if (cause.getSolutions() != null) {
@@ -240,96 +262,71 @@ public class KnowledgeGraphService {
 
     // --- Graph Data & Analysis ---
 
+    @Cacheable(value = "graphData")
     public GraphData getWholeGraph() {
-        Set<GraphNode> nodes = new HashSet<>();
-        Set<GraphLink> links = new HashSet<>();
+        String nodesQuery = "MATCH (n) RETURN n, labels(n)[0] as label";
+        List<GraphNode> nodes = new ArrayList<>(neo4jClient.query(nodesQuery)
+                .fetchAs(GraphNode.class)
+                .mappedBy((typeSystem, record) -> {
+                    var n = record.get("n").asNode();
+                    return new GraphNode(
+                            n.get("name").asString(),
+                            n.get("name").asString(),
+                            record.get("label").asString(),
+                            n.get("description").asString(null),
+                            n.get("attributes").asString(null)
+                    );
+                })
+                .all());
 
-        // 1. DeviceTypes
-        for (DeviceType d : deviceTypeRepository.findAll()) {
-            nodes.add(new GraphNode(d.getName(), d.getName(), "DeviceType", d.getDescription(), d.getAttributes()));
-            if (d.getComponents() != null) {
-                for (Component c : d.getComponents()) {
-                    nodes.add(new GraphNode(c.getName(), c.getName(), "Component", c.getDescription(), c.getAttributes()));
-                    links.add(new GraphLink(d.getName(), c.getName(), "HAS_COMPONENT"));
-                }
-            }
-        }
+        String linksQuery = "MATCH (n)-[r]->(m) RETURN n.name as source, m.name as target, type(r) as type";
+        List<GraphLink> links = new ArrayList<>(neo4jClient.query(linksQuery)
+                .fetchAs(GraphLink.class)
+                .mappedBy((typeSystem, record) -> new GraphLink(
+                        record.get("source").asString(),
+                        record.get("target").asString(),
+                        record.get("type").asString()
+                ))
+                .all());
 
-        // 2. Components
-        for (Component c : componentRepository.findAll()) {
-            nodes.add(new GraphNode(c.getName(), c.getName(), "Component", c.getDescription(), c.getAttributes()));
-            if (c.getPossibleFaults() != null) {
-                for (FaultPhenomenon p : c.getPossibleFaults()) {
-                    nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon", p.getDescription(), p.getAttributes()));
-                    links.add(new GraphLink(c.getName(), p.getName(), "HAS_POSSIBLE_FAULT"));
-                }
-            }
-        }
-
-        // 3. FaultPhenomena
-        for (FaultPhenomenon p : faultPhenomenonRepository.findAll()) {
-            nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon", p.getDescription(), p.getAttributes()));
-            if (p.getCauses() != null) {
-                for (FaultCause c : p.getCauses()) {
-                    nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause", c.getDescription(), c.getAttributes()));
-                    links.add(new GraphLink(p.getName(), c.getName(), "CAUSED_BY"));
-                }
-            }
-        }
-
-        // 4. FaultCauses
-        for (FaultCause c : faultCauseRepository.findAll()) {
-            nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause", c.getDescription(), c.getAttributes()));
-            if (c.getSolutions() != null) {
-                for (Solution s : c.getSolutions()) {
-                    nodes.add(new GraphNode(s.getName(), s.getName(), "Solution", s.getDescription(), s.getAttributes()));
-                    links.add(new GraphLink(c.getName(), s.getName(), "SOLVED_BY"));
-                }
-            }
-        }
-
-        // 5. Solutions
-        for (Solution s : solutionRepository.findAll()) {
-            nodes.add(new GraphNode(s.getName(), s.getName(), "Solution", s.getDescription(), s.getAttributes()));
-        }
-
-        return new GraphData(new ArrayList<>(nodes), new ArrayList<>(links));
+        return new GraphData(nodes, links);
     }
 
+    @Cacheable(value = "graphData", key = "#phenomenonName")
     public GraphData getDiagnosis(String phenomenonName) {
-        Optional<FaultPhenomenon> opt = faultPhenomenonRepository.findById(phenomenonName);
-        if (opt.isEmpty()) return new GraphData(new ArrayList<>(), new ArrayList<>());
+        String nodesQuery = "MATCH path = (p:FaultPhenomenon {name: $name})-[*0..2]->(leaf) " +
+                "UNWIND nodes(path) as n " +
+                "RETURN DISTINCT n, labels(n)[0] as label";
 
-        FaultPhenomenon p = opt.get();
-        Set<GraphNode> nodes = new HashSet<>();
-        Set<GraphLink> links = new HashSet<>();
+        List<GraphNode> nodes = new ArrayList<>(neo4jClient.query(nodesQuery)
+                .bind(phenomenonName).to("name")
+                .fetchAs(GraphNode.class)
+                .mappedBy((typeSystem, record) -> {
+                    var n = record.get("n").asNode();
+                    return new GraphNode(
+                            n.get("name").asString(),
+                            n.get("name").asString(),
+                            record.get("label").asString(),
+                            n.get("description").asString(null),
+                            n.get("attributes").asString(null)
+                    );
+                })
+                .all());
 
-        nodes.add(new GraphNode(p.getName(), p.getName(), "FaultPhenomenon", p.getDescription(), p.getAttributes()));
+        String linksQuery = "MATCH path = (p:FaultPhenomenon {name: $name})-[*0..2]->(leaf) " +
+                "UNWIND relationships(path) as r " +
+                "RETURN DISTINCT startNode(r).name as source, endNode(r).name as target, type(r) as type";
 
-        if (p.getCauses() != null) {
-            for (FaultCause cStub : p.getCauses()) {
-                // Fetch full cause to get solutions
-                Optional<FaultCause> causeOpt = faultCauseRepository.findById(cStub.getName());
-                if (causeOpt.isPresent()) {
-                    FaultCause c = causeOpt.get();
-                    nodes.add(new GraphNode(c.getName(), c.getName(), "FaultCause", c.getDescription(), c.getAttributes()));
-                    links.add(new GraphLink(p.getName(), c.getName(), "CAUSED_BY"));
-                    
-                    if (c.getSolutions() != null) {
-                        for (Solution sStub : c.getSolutions()) {
-                            // Fetch full solution to get description/attributes
-                             Optional<Solution> solOpt = solutionRepository.findById(sStub.getName());
-                             if(solOpt.isPresent()) {
-                                 Solution s = solOpt.get();
-                                 nodes.add(new GraphNode(s.getName(), s.getName(), "Solution", s.getDescription(), s.getAttributes()));
-                                 links.add(new GraphLink(c.getName(), s.getName(), "SOLVED_BY"));
-                             }
-                        }
-                    }
-                }
-            }
-        }
+        List<GraphLink> links = new ArrayList<>(neo4jClient.query(linksQuery)
+                .bind(phenomenonName).to("name")
+                .fetchAs(GraphLink.class)
+                .mappedBy((typeSystem, record) -> new GraphLink(
+                        record.get("source").asString(),
+                        record.get("target").asString(),
+                        record.get("type").asString()
+                ))
+                .all());
 
-        return new GraphData(new ArrayList<>(nodes), new ArrayList<>(links));
+        return new GraphData(nodes, links);
     }
 }

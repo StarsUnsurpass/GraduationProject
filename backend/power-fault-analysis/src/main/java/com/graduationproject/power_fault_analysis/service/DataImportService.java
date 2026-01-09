@@ -3,22 +3,29 @@ package com.graduationproject.power_fault_analysis.service;
 import com.graduationproject.power_fault_analysis.model.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Iterator;
+import java.util.*;
 
 @Service
 public class DataImportService {
 
     private final KnowledgeGraphService knowledgeGraphService;
+    private final Neo4jClient neo4jClient;
 
-    public DataImportService(KnowledgeGraphService knowledgeGraphService) {
+    public DataImportService(KnowledgeGraphService knowledgeGraphService, Neo4jClient neo4jClient) {
         this.knowledgeGraphService = knowledgeGraphService;
+        this.neo4jClient = neo4jClient;
     }
 
+    @Transactional
+    @CacheEvict(value = "graphData", allEntries = true)
     public void importData(MultipartFile file) throws IOException {
         try (InputStream inputStream = file.getInputStream();
              Workbook workbook = new XSSFWorkbook(inputStream)) {
@@ -35,10 +42,11 @@ public class DataImportService {
         }
     }
 
-    private void importNodes(Sheet sheet, String type) {
+    private void importNodes(Sheet sheet, String label) {
         if (sheet == null) return;
+        List<Map<String, Object>> nodeData = new ArrayList<>();
         Iterator<Row> rows = sheet.iterator();
-        
+
         // Skip header
         if (rows.hasNext()) {
             rows.next();
@@ -47,50 +55,25 @@ public class DataImportService {
         while (rows.hasNext()) {
             Row row = rows.next();
             if (row == null) continue;
-            
+
             String name = getCellValueAsString(row.getCell(0));
             String description = getCellValueAsString(row.getCell(1));
-            String attributes = getCellValueAsString(row.getCell(2)); // Read attributes from 3rd column
-            
+            String attributes = getCellValueAsString(row.getCell(2));
+
             if (name == null || name.isEmpty()) continue;
 
-            switch (type) {
-                case "DeviceType":
-                    DeviceType d = new DeviceType();
-                    d.setName(name);
-                    d.setDescription(description);
-                    d.setAttributes(attributes);
-                    knowledgeGraphService.saveDeviceType(d);
-                    break;
-                case "Component":
-                    Component c = new Component();
-                    c.setName(name);
-                    c.setDescription(description);
-                    c.setAttributes(attributes);
-                    knowledgeGraphService.saveComponent(c);
-                    break;
-                case "FaultPhenomenon":
-                    FaultPhenomenon fp = new FaultPhenomenon();
-                    fp.setName(name);
-                    fp.setDescription(description);
-                    fp.setAttributes(attributes);
-                    knowledgeGraphService.saveFaultPhenomenon(fp);
-                    break;
-                case "FaultCause":
-                    FaultCause fc = new FaultCause();
-                    fc.setName(name);
-                    fc.setDescription(description);
-                    fc.setAttributes(attributes);
-                    knowledgeGraphService.saveFaultCause(fc);
-                    break;
-                case "Solution":
-                    Solution s = new Solution();
-                    s.setName(name);
-                    s.setDescription(description);
-                    s.setAttributes(attributes);
-                    knowledgeGraphService.saveSolution(s);
-                    break;
-            }
+            Map<String, Object> props = new HashMap<>();
+            props.put("name", name);
+            props.put("description", description);
+            props.put("attributes", attributes);
+            nodeData.add(props);
+        }
+
+        if (!nodeData.isEmpty()) {
+            String query = String.format("UNWIND $props AS map MERGE (n:%s {name: map.name}) SET n += map", label);
+            neo4jClient.query(query)
+                    .bind(nodeData).to("props")
+                    .run();
         }
     }
 
@@ -100,6 +83,8 @@ public class DataImportService {
 
         // Skip header
         if (rows.hasNext()) rows.next();
+
+        Map<String, List<Map<String, String>>> relsByType = new HashMap<>();
 
         while (rows.hasNext()) {
             Row row = rows.next();
@@ -111,25 +96,23 @@ public class DataImportService {
 
             if (source.isEmpty() || target.isEmpty() || type.isEmpty()) continue;
 
-            try {
-                switch (type.toUpperCase()) {
-                    case "HAS_COMPONENT":
-                        knowledgeGraphService.addComponentToDeviceType(source, target);
-                        break;
-                    case "HAS_POSSIBLE_FAULT":
-                        knowledgeGraphService.addFaultToComponent(source, target);
-                        break;
-                    case "CAUSED_BY":
-                        knowledgeGraphService.addCauseToPhenomenon(source, target);
-                        break;
-                    case "SOLVED_BY":
-                        knowledgeGraphService.addSolutionToCause(source, target);
-                        break;
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to import relationship: " + source + " -> " + target + " (" + type + ")");
-                e.printStackTrace();
-            }
+            relsByType.computeIfAbsent(type.toUpperCase(), k -> new ArrayList<>())
+                    .add(Map.of("source", source, "target", target));
+        }
+
+        for (Map.Entry<String, List<Map<String, String>>> entry : relsByType.entrySet()) {
+            String type = entry.getKey();
+            List<Map<String, String>> rels = entry.getValue();
+
+            // Generic MATCH using property 'name'. Requires indexes on all node labels' 'name' property.
+            String query = String.format(
+                    "UNWIND $rels AS rel " +
+                    "MATCH (s {name: rel.source}), (t {name: rel.target}) " +
+                    "MERGE (s)-[r:%s]->(t)", type);
+
+            neo4jClient.query(query)
+                    .bind(rels).to("rels")
+                    .run();
         }
     }
 

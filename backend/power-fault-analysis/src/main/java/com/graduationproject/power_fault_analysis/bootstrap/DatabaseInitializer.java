@@ -6,6 +6,7 @@ import com.graduationproject.power_fault_analysis.model.FaultPhenomenon;
 import com.graduationproject.power_fault_analysis.model.Solution;
 import com.graduationproject.power_fault_analysis.repository.*;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,22 +21,27 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final FaultPhenomenonRepository faultPhenomenonRepository;
     private final FaultCauseRepository faultCauseRepository;
     private final SolutionRepository solutionRepository;
+    private final Neo4jClient neo4jClient;
 
     public DatabaseInitializer(DeviceTypeRepository deviceTypeRepository,
                                ComponentRepository componentRepository,
                                FaultPhenomenonRepository faultPhenomenonRepository,
                                FaultCauseRepository faultCauseRepository,
-                               SolutionRepository solutionRepository) {
+                               SolutionRepository solutionRepository,
+                               Neo4jClient neo4jClient) {
         this.deviceTypeRepository = deviceTypeRepository;
         this.componentRepository = componentRepository;
         this.faultPhenomenonRepository = faultPhenomenonRepository;
         this.faultCauseRepository = faultCauseRepository;
         this.solutionRepository = solutionRepository;
+        this.neo4jClient = neo4jClient;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        createConstraints();
+
         if (deviceTypeRepository.count() > 0) {
             System.out.println("Database already initialized.");
             return;
@@ -68,5 +74,18 @@ public class DatabaseInitializer implements CommandLineRunner {
         deviceTypeRepository.save(device1);
 
         System.out.println("Database initialization completed.");
+    }
+
+    private void createConstraints() {
+        String[] labels = {"DeviceType", "Component", "FaultPhenomenon", "FaultCause", "Solution", "User"};
+        for (String label : labels) {
+            try {
+                // Use CREATE CONSTRAINT IF NOT EXISTS (Neo4j 4.2+)
+                String query = String.format("CREATE CONSTRAINT %s_name_unique IF NOT EXISTS FOR (n:%s) REQUIRE n.name IS UNIQUE", label.toLowerCase(), label);
+                neo4jClient.query(query).run();
+            } catch (Exception e) {
+                System.err.println("Could not create constraint for " + label + ": " + e.getMessage());
+            }
+        }
     }
 }

@@ -95,6 +95,8 @@ const resetSearch = () => {
     solutions.value = [];
 }
 
+const lastDiagnosisData = ref(null);
+
 const handleDiagnose = async () => {
     if (!searchQuery.value) return;
     
@@ -109,6 +111,7 @@ const handleDiagnose = async () => {
         
         if (response.data && response.data.nodes && response.data.nodes.length > 0) {
             resultFound.value = true;
+            lastDiagnosisData.value = response.data;
             solutions.value = response.data.nodes.filter(n => n.category === 'Solution');
             await nextTick();
             initChart(response.data);
@@ -134,6 +137,7 @@ const initChart = (data) => {
         }
     } else {
         chartInstance = echarts.init(chartDom, theme);
+        window.addEventListener('resize', () => chartInstance && chartInstance.resize());
     }
     
     const categories = [
@@ -220,8 +224,8 @@ const translateRelation = (name) => {
 // Watch for theme changes
 onMounted(() => {
   const observer = new MutationObserver(() => {
-    if (resultFound.value) {
-       handleDiagnose(); // Refresh chart with new theme
+    if (resultFound.value && lastDiagnosisData.value) {
+       initChart(lastDiagnosisData.value); // Refresh chart with new theme using cached data
     }
   });
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });

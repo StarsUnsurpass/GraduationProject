@@ -45,35 +45,39 @@ const selectedCategories = ref(['DeviceType', 'Component', 'FaultPhenomenon', 'F
 // Detect dark mode
 const isDarkMode = () => document.documentElement.classList.contains('dark');
 
-const updateChart = () => {
+// Store filtered data to avoid re-calculating on theme change if not needed
+const currentFilteredNodes = ref([]);
+const currentFilteredLinks = ref([]);
+
+const updateChart = (recalculateData = true) => {
     if (!fullData.value.nodes.length) return;
     
-    const filteredNodesRaw = fullData.value.nodes.filter(n => selectedCategories.value.includes(n.category));
-    const filteredNodeIds = new Set(filteredNodesRaw.map(n => n.id));
-    
-    const filteredLinksRaw = fullData.value.links.filter(l => 
-        filteredNodeIds.has(l.source) && filteredNodeIds.has(l.target)
-    );
+    if (recalculateData) {
+        currentFilteredNodes.value = fullData.value.nodes.filter(n => selectedCategories.value.includes(n.category));
+        const filteredNodeIds = new Set(currentFilteredNodes.value.map(n => n.id));
+        currentFilteredLinks.value = fullData.value.links.filter(l => 
+            filteredNodeIds.has(l.source) && filteredNodeIds.has(l.target)
+        );
+    }
 
-    renderChart(filteredNodesRaw, filteredLinksRaw);
+    renderChart(currentFilteredNodes.value, currentFilteredLinks.value);
 };
 
 const renderChart = (nodeData, linkData) => {
   const chartDom = document.getElementById('graph-container');
   if (!chartDom) return;
   
+  const currentTheme = isDarkMode() ? 'dark' : null;
+  
   if (!chartInstance.value) {
-      chartInstance.value = echarts.init(chartDom, isDarkMode() ? 'dark' : null);
+      chartInstance.value = echarts.init(chartDom, currentTheme);
       window.addEventListener('resize', () => {
           chartInstance.value.resize();
       });
-  } else {
-      // Re-initialize if theme changed
-      const currentTheme = isDarkMode() ? 'dark' : null;
-      if (chartInstance.value.getTheme() !== currentTheme) {
-          chartInstance.value.dispose();
-          chartInstance.value = echarts.init(chartDom, currentTheme);
-      }
+  } else if (chartInstance.value.getTheme() !== currentTheme) {
+      // Re-initialize only if theme changed
+      chartInstance.value.dispose();
+      chartInstance.value = echarts.init(chartDom, currentTheme);
   }
   
   const categories = [
@@ -166,7 +170,7 @@ const renderChart = (nodeData, linkData) => {
 // Listen for theme changes from App.vue
 onMounted(async () => {
   const observer = new MutationObserver(() => {
-    updateChart();
+    updateChart(false);
   });
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
