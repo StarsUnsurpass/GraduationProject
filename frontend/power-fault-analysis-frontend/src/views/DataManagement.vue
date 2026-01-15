@@ -253,7 +253,7 @@
     <el-dialog v-model="showEditDialog" title="编辑实体信息">
         <el-form :model="editForm">
             <el-form-item label="名称 (ID)">
-                <el-input v-model="editForm.name" placeholder="修改名称..." disabled />
+                <el-input v-model="editForm.name" placeholder="修改名称 (慎重: 会影响所有关联)" />
             </el-form-item>
             <el-form-item label="描述/备注">
                 <el-input v-model="editForm.description" type="textarea" :rows="3" />
@@ -290,7 +290,7 @@ const manageList = ref([]);
 const manageLoading = ref(false);
 
 const showEditDialog = ref(false);
-const editForm = ref({ name: '', description: '', attributes: '', type: '' });
+const editForm = ref({ name: '', originalName: '', description: '', attributes: '', type: '' });
 
 // Manage Relationships State
 const relationships = ref([]);
@@ -314,6 +314,18 @@ const templateUrl = import.meta.env.VITE_API_BASE_URL + '/power_fault_template.x
 const downloadTemplate = () => {
     window.open(templateUrl, '_blank');
 };
+
+// Map lowercase type to Backend Class Name
+const getCapitalizedType = (type) => {
+    const map = {
+        'devicetype': 'DeviceType',
+        'component': 'Component',
+        'faultphenomenon': 'FaultPhenomenon',
+        'faultcause': 'FaultCause',
+        'solution': 'Solution'
+    };
+    return map[type] || type;
+}
 
 // Fetch lists for dropdowns
 const fetchAllLists = async () => {
@@ -395,6 +407,7 @@ const deleteEntity = async (name) => {
 const openEditDialog = (row) => {
     editForm.value = {
         name: row.name,
+        originalName: row.name,
         description: row.description,
         attributes: row.attributes,
         type: manageType.value
@@ -404,16 +417,29 @@ const openEditDialog = (row) => {
 
 const updateEntity = async () => {
     try {
+        // Handle Rename if name changed
+        if (editForm.value.name !== editForm.value.originalName) {
+            await axios.put(`${apiBase}/rename`, {
+                label: getCapitalizedType(editForm.value.type),
+                oldName: editForm.value.originalName,
+                newName: editForm.value.name
+            });
+        }
+
+        // Update other properties
         await axios.post(`${apiBase}/${editForm.value.type}`, {
-            name: editForm.value.name,
+            name: editForm.value.name, // Use new name
             description: editForm.value.description,
             attributes: editForm.value.attributes
         });
+        
         ElMessage.success("更新成功");
         showEditDialog.value = false;
         fetchManageList();
+        fetchAllLists(); // Refresh dropdowns as name might have changed
     } catch (e) {
-        ElMessage.error("更新失败");
+        console.error(e);
+        ElMessage.error("更新失败: " + (e.response?.data?.message || e.message));
     }
 };
 
